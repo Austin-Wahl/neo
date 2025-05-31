@@ -15,13 +15,13 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
+import { User } from "@/prisma/generated/prisma";
 import { ThemeProvider } from "@/providers/theme-provider";
 import getServerSideSession from "@/utils/getServerSideSession";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Orbitron } from "next/font/google";
 import { ReactNode } from "react";
 import "./globals.css";
-import { User } from "@/prisma/generated/prisma";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

@@ -33,7 +33,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { createProjectSchema } from "@/validation-schemas/project";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, PlusCircle } from "lucide-react";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, ReactNode, SetStateAction, useState } from "react";
 import { SubmitHandler, useForm, UseFormReturn } from "react-hook-form";
 import { PuffLoader } from "react-spinners";
 import { toast } from "sonner";
@@ -45,9 +45,17 @@ interface CreateProjectFormProps {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
   form: UseFormReturn<CreateProjectFormValues>;
+  trigger?: ReactNode;
+  asChild?: boolean;
 }
 
-const CreateProjectCard = () => {
+const CreateProjectCard = ({
+  trigger,
+  asChild,
+}: {
+  trigger?: ReactNode;
+  asChild?: boolean;
+}) => {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -62,6 +70,7 @@ const CreateProjectCard = () => {
 
   async function handleSubmit(data: CreateProjectFormValues) {
     try {
+      console.log(data);
       // Make the request here
       await new Promise((resolve) => {
         setTimeout(() => {
@@ -91,6 +100,8 @@ const CreateProjectCard = () => {
         handleSubmit={handleSubmit}
         open={open}
         setOpen={setOpen}
+        trigger={trigger}
+        asChild={asChild}
       />
     );
   }
@@ -101,6 +112,8 @@ const CreateProjectCard = () => {
       handleSubmit={handleSubmit}
       open={open}
       setOpen={setOpen}
+      trigger={trigger}
+      asChild={asChild}
     />
   );
 };
@@ -119,12 +132,14 @@ const DesktopForm = ({
   open,
   setOpen,
   handleSubmit,
+  trigger,
+  asChild,
 }: CreateProjectFormProps) => {
   return (
     <Form {...form}>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger>
-          <CreateProjectCardTrigger />
+        <DialogTrigger asChild={asChild}>
+          {trigger ? trigger : <CreateProjectCardTrigger />}
         </DialogTrigger>
         <DialogContent>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
@@ -134,7 +149,7 @@ const DesktopForm = ({
                 Projects help organize Database connections.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
+            <div className="py-4 space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -211,12 +226,14 @@ const MobileForm = ({
   open,
   setOpen,
   handleSubmit,
+  trigger,
+  asChild,
 }: CreateProjectFormProps) => {
   return (
     <Form {...form}>
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger>
-          <CreateProjectCardTrigger />
+        <DrawerTrigger asChild={asChild}>
+          {trigger ? trigger : <CreateProjectCardTrigger />}
         </DrawerTrigger>
         <DrawerContent>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
