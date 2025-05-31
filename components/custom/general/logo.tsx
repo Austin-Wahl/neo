@@ -3,13 +3,13 @@ import { useTheme } from "next-themes";
 import Image from "next/image";
 
 const Logo = () => {
-  const { theme } = useTheme();
+  const { theme, systemTheme } = useTheme();
 
-  if (theme === "dark" || theme === undefined)
+  if (theme === "dark" || theme === undefined || systemTheme === "dark")
     return (
       <Image
         alt="Neo Logo"
-        src="/images/logos/logo-light.png"
+        src="/images/logos/logo-light.png"  
         width={40}
         height={40}
       />

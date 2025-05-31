@@ -51,7 +51,7 @@ export default async function RootLayout({
   const session = await getServerSideSession();
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning={true}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} antialiased`}
       >
@@ -64,7 +64,7 @@ export default async function RootLayout({
           <SidebarProvider>
             <div className="w-full h-screen min-h-[400px] relative">
               <div className="top-0 left-0 w-full h-[72px] fixed z-[100]">
-                <Navigation />
+                <Navigation session={session} />
               </div>
               <main className="absolute w-full top-[68px]">
                 {session ? (

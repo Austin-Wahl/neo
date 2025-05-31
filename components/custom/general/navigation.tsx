@@ -1,3 +1,4 @@
+"use client";
 import Logo from "@/components/custom/general/logo";
 import UserDropdown from "@/components/custom/general/user-dropdown";
 import { Button } from "@/components/ui/button";
@@ -10,11 +11,10 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { User } from "@/prisma/generated/prisma";
-import getServerSideSession from "@/utils/getServerSideSession";
+import { Session } from "@/utils/getServerSideSession";
 import Link from "next/link";
 
-const Navigation = async () => {
-  const session = await getServerSideSession();
+const Navigation =  ({session}: {session: Session | null}) => {
 
   return (
     <div className="p-4 flex justify-between items-center border-b-[2px] bg-background">

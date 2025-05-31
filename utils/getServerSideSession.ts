@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { auth } from "../lib/auth";
 import { User } from "@/prisma/generated/prisma";
 
-type Session = typeof auth.$Infer.Session & { user: User };
+export type Session = typeof auth.$Infer.Session & { user: User };
 
 /**
  * Helper function which returns the logged in user's session or returns null in the event it does not exist or errors out.
