@@ -1,36 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Welcome to NEO
 
-## Getting Started
+NEO is an open source Relational Database Management application. Similar to PG Admin but its browser based and works with all sorts of RDBs.
 
-First, run the development server:
+# Supported Databases
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Postgres
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+NEO is self hostable but if your looking to get started fast, head over to [neodb.dev](https://neodb.dev) and signup!
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Why use NEO?
 
-## Learn More
+NEO doesn't aim to replace existing tools. It simply aims to make database interacts a bit easier. Rather than having to use multiple complex and resource intensive tools, NEO can handle a lot of the things you'd expect from a DBMS in a simple and modern UI (thanks ShadCN). Its built for develoers and clients.
 
-To learn more about Next.js, take a look at the following resources:
+# Frame of mind
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+NEO was designed because I (the developer), got tired of having to use different tools to interact with databases. Sure, many providers provide services to interact with a DB via a GUI but it can be a pain having to navigiate between different platforms. My hope is that NEO will make your DX a bit better. I am not trying to reinvent the wheel here.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# How does it work?
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+NEO abstracts database connections behind the scenes. This means that dispite the differing technical standards RDBs use (think connection strings), NEO is still able to interact with them.
