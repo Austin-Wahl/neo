@@ -1,9 +1,12 @@
+import { typeToFlattenedError } from "zod";
+
 export type APIResponse<T = unknown> = {
   message: string;
   data?: T;
-  items?: Array<T>;
+  items?: T;
   error?: string;
   pagination: Pagination;
+  zodValidationDetails?: typeToFlattenedError<T>;
 };
 
 export interface Pagination {
@@ -12,5 +15,6 @@ export interface Pagination {
   metadata: {
     skippedRecords: number;
     limit: number;
+    totalRecords: number;
   };
 }

@@ -1,13 +1,16 @@
 import CreateProjectCard from "@/components/custom/create-project-card/create-project-card";
+import ProjectCard from "@/components/custom/project-card/project-card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import getServerSideSession from "@/utils/getServerSideSession";
+import { getProjects } from "@/data-access/project";
+import getServerSideSession, { Session } from "@/utils/getServerSideSession";
 import { Database, Download } from "lucide-react";
 import { ReactNode } from "react";
 
 export default async function Home() {
   const session = await getServerSideSession();
   if (session) {
-    return <ProjectsLayout />;
+    return <ProjectsLayout session={session} />;
   }
 
   return (
@@ -19,10 +22,31 @@ export default async function Home() {
   );
 }
 
-const ProjectsLayout = () => {
+const ProjectsLayout = async ({ session }: { session: Session }) => {
+  const [projectsError, projects] = await getProjects({
+    where: { ownerId: session.user.id },
+    take: 20,
+  });
+
   return (
-    <div>
-      <CreateProjectCard />
+    <div className="flex flex-col gap-4">
+      <div>
+        <CreateProjectCard />
+      </div>
+      <div className="flex flex-wrap gap-4">
+        {projectsError ? (
+          <Alert variant={"destructive"}>
+            <AlertTitle>Something went wrong.</AlertTitle>
+            <AlertDescription>
+              NEO failed to retrieve your projects.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          projects?.map((project) => {
+            return <ProjectCard key={project.id} {...project} />;
+          })
+        )}
+      </div>
     </div>
   );
 };

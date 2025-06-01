@@ -33,6 +33,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { createProjectSchema } from "@/validation-schemas/project";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, PlusCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Dispatch, ReactNode, SetStateAction, useState } from "react";
 import { SubmitHandler, useForm, UseFormReturn } from "react-hook-form";
 import { PuffLoader } from "react-spinners";
@@ -58,26 +59,26 @@ const CreateProjectCard = ({
 }) => {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
-
+  const router = useRouter();
   const form = useForm<CreateProjectFormValues>({
     resolver: zodResolver(createProjectSchema),
     defaultValues: {
       description: "",
-      icon: undefined,
       name: "New Project",
     },
   });
 
   async function handleSubmit(data: CreateProjectFormValues) {
     try {
-      console.log(data);
-      // Make the request here
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(true);
-        }, 4000);
+      const response = await fetch("/api/project", {
+        method: "POST",
+        body: JSON.stringify(data),
       });
 
+      const body = await response.json();
+      if (!response.ok) throw body;
+
+      router.refresh();
       toast("Project Created", {
         description:
           "Your project has been created! If you don't see it, refresh.",

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { User } from "@/prisma/generated/prisma";
+import QueryProvider from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import getServerSideSession from "@/utils/getServerSideSession";
 import type { Metadata } from "next";
@@ -55,30 +56,32 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <SidebarProvider>
-            <div className="w-full h-screen min-h-[400px] relative">
-              <div className="top-0 left-0 w-full h-[72px] fixed z-[100]">
-                <Navigation session={session} />
+        <QueryProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <SidebarProvider>
+              <div className="w-full h-screen min-h-[400px] relative">
+                <div className="top-0 left-0 w-full h-[72px] fixed z-[100]">
+                  <Navigation session={session} />
+                </div>
+                <main className="absolute w-full top-[68px]">
+                  {session ? (
+                    <AuthenticatedUserLayout user={session.user}>
+                      {children}
+                    </AuthenticatedUserLayout>
+                  ) : (
+                    children
+                  )}
+                </main>
               </div>
-              <main className="absolute w-full top-[68px]">
-                {session ? (
-                  <AuthenticatedUserLayout user={session.user}>
-                    {children}
-                  </AuthenticatedUserLayout>
-                ) : (
-                  children
-                )}
-              </main>
-            </div>
-            <Toaster />
-          </SidebarProvider>
-        </ThemeProvider>
+              <Toaster />
+            </SidebarProvider>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );
