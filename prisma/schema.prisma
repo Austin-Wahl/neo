@@ -15,26 +15,27 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String    @id @default(uuid())
   name          String
   email         String
   emailVerified Boolean
-  image         String?
-  createdAt     DateTime
-  updatedAt     DateTime
+  image         String    @default("https://placehold.co/400x400.png")
+  createdAt     DateTime  @db.Timestamptz()
+  updatedAt     DateTime  @db.Timestamptz()
   sessions      Session[]
   accounts      Account[]
+  Project       Project[]
 
   @@unique([email])
   @@map("user")
 }
 
 model Session {
-  id        String   @id
+  id        String   @id @default(uuid())
   expiresAt DateTime
   token     String
-  createdAt DateTime
-  updatedAt DateTime
+  createdAt DateTime @db.Timestamptz()
+  updatedAt DateTime @db.Timestamptz()
   ipAddress String?
   userAgent String?
   userId    String
@@ -45,7 +46,7 @@ model Session {
 }
 
 model Account {
-  id                    String    @id
+  id                    String    @id @default(uuid())
   accountId             String
   providerId            String
   userId                String
@@ -57,19 +58,32 @@ model Account {
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?
-  createdAt             DateTime
-  updatedAt             DateTime
+  createdAt             DateTime  @db.Timestamptz()
+  updatedAt             DateTime  @db.Timestamptz()
 
   @@map("account")
 }
 
 model Verification {
-  id         String    @id
+  id         String    @id @default(uuid())
   identifier String
   value      String
   expiresAt  DateTime
-  createdAt  DateTime?
-  updatedAt  DateTime?
+  createdAt  DateTime? @db.Timestamptz()
+  updatedAt  DateTime? @db.Timestamptz()
 
   @@map("verification")
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  icon        String
+  createdAt   DateTime @default(now()) @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @db.Timestamptz()
+
+  @@map("project")
 }

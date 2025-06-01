@@ -1,0 +1,31 @@
+-- AlterTable
+ALTER TABLE "account" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMPTZ,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMPTZ;
+
+-- AlterTable
+ALTER TABLE "session" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMPTZ,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMPTZ;
+
+-- AlterTable
+ALTER TABLE "user" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMPTZ,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMPTZ;
+
+-- AlterTable
+ALTER TABLE "verification" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMPTZ,
+ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMPTZ;
+
+-- CreateTable
+CREATE TABLE "project" (
+    "id" TEXT NOT NULL,
+    "ownerId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "icon" TEXT,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ NOT NULL,
+
+    CONSTRAINT "project_pkey" PRIMARY KEY ("id")
+);
+
+-- AddForeignKey
+ALTER TABLE "project" ADD CONSTRAINT "project_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
