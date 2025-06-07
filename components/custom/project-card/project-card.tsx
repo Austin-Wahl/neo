@@ -27,12 +27,13 @@ export default function ProjectCard({
   icon,
   updatedAt,
 }: Project) {
-  const updatedAtLocal = updatedAt.toDateString();
+  const updatedAtLocal = new Date(updatedAt).toDateString();
 
   return (
     <Card
+      onClick={() => (window.location.href = `/project/${id}`)}
       key={id}
-      className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-200 hover:border-border hover:bg-card/80 hover:shadow-lg w-full sm:max-w-[300px] sm:aspect-video"
+      className="cursor-pointer group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-200 hover:border-border hover:bg-card/80 hover:shadow-lg w-full sm:max-w-[300px] sm:aspect-video"
     >
       <CardHeader>
         <div className="flex items-start justify-between">
@@ -68,9 +69,14 @@ export default function ProjectCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>Open Project</DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
+                  Open Project
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem
+                  className="text-destructive cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   Delete Project
                 </DropdownMenuItem>
               </DropdownMenuContent>

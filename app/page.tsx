@@ -1,10 +1,10 @@
 import CreateProjectCard from "@/components/custom/create-project-card/create-project-card";
-import ProjectCard from "@/components/custom/project-card/project-card";
+import ProjectsGrid from "@/components/custom/projects-grid/projects-grid";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { getProjects } from "@/data-access/project";
+import { countProjects, getProjects } from "@/data-access/project";
 import getServerSideSession, { Session } from "@/utils/getServerSideSession";
-import { Database, Download } from "lucide-react";
+import { AlertCircle, Database, Download } from "lucide-react";
 import { ReactNode } from "react";
 
 export default async function Home() {
@@ -27,24 +27,29 @@ const ProjectsLayout = async ({ session }: { session: Session }) => {
     where: { ownerId: session.user.id },
     take: 20,
   });
+  const [countError, totalProjects] = await countProjects({
+    ownerId: session.user.id,
+  });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-4">
       <div>
         <CreateProjectCard />
       </div>
       <div className="flex flex-wrap gap-4">
-        {projectsError ? (
+        {projectsError || countError ? (
           <Alert variant={"destructive"}>
+            <AlertCircle />
             <AlertTitle>Something went wrong.</AlertTitle>
             <AlertDescription>
               NEO failed to retrieve your projects.
             </AlertDescription>
           </Alert>
         ) : (
-          projects?.map((project) => {
-            return <ProjectCard key={project.id} {...project} />;
-          })
+          <ProjectsGrid
+            projects={projects!}
+            totalRecords={totalProjects as number}
+          />
         )}
       </div>
     </div>

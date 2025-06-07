@@ -29,18 +29,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import useCreateProject, {
+  CreateProjectFormValues,
+} from "@/hooks/use-create-project";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { createProjectSchema } from "@/validation-schemas/project";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, PlusCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { Dispatch, ReactNode, SetStateAction, useState } from "react";
 import { SubmitHandler, useForm, UseFormReturn } from "react-hook-form";
 import { PuffLoader } from "react-spinners";
 import { toast } from "sonner";
-import { z } from "zod";
 
-type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
 interface CreateProjectFormProps {
   handleSubmit: SubmitHandler<CreateProjectFormValues>;
   open: boolean;
@@ -59,7 +59,8 @@ const CreateProjectCard = ({
 }) => {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
-  const router = useRouter();
+  const { mutateAsync } = useCreateProject();
+
   const form = useForm<CreateProjectFormValues>({
     resolver: zodResolver(createProjectSchema),
     defaultValues: {
@@ -70,19 +71,7 @@ const CreateProjectCard = ({
 
   async function handleSubmit(data: CreateProjectFormValues) {
     try {
-      const response = await fetch("/api/project", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-
-      const body = await response.json();
-      if (!response.ok) throw body;
-
-      router.refresh();
-      toast("Project Created", {
-        description:
-          "Your project has been created! If you don't see it, refresh.",
-      });
+      await mutateAsync(data);
 
       form.reset();
       setOpen(false);
@@ -142,7 +131,7 @@ const DesktopForm = ({
         <DialogTrigger asChild={asChild}>
           {trigger ? trigger : <CreateProjectCardTrigger />}
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
             <DialogHeader>
               <DialogTitle>Create a Project</DialogTitle>
@@ -196,7 +185,10 @@ const DesktopForm = ({
             <DialogFooter className="flex justify-between">
               <Button
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false);
+                  form.reset();
+                }}
                 type="button"
               >
                 Cancel

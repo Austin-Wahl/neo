@@ -39,19 +39,24 @@ export const GET = async (request: NextRequest) => {
     // Get data
     const where: Prisma.ProjectWhereInput = {
       ownerId: session.user.id,
-      OR: [
-        {
-          name: {
-            contains: validatedParams.search,
-            mode: "insensitive",
-          },
-          description: {
-            contains: validatedParams.search,
-            mode: "insensitive",
-          },
-        },
-      ],
+      OR: validatedParams.search
+        ? [
+            {
+              name: {
+                contains: validatedParams.search,
+                mode: "insensitive",
+              },
+            },
+            {
+              description: {
+                contains: validatedParams.search,
+                mode: "insensitive",
+              },
+            },
+          ]
+        : undefined,
     };
+
     const [queryError, projects] = await getProjects({
       where,
       take: validatedParams.limit,
