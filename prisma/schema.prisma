@@ -15,16 +15,17 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  name          String
-  email         String
-  emailVerified Boolean
-  image         String    @default("https://placehold.co/400x400.png")
-  createdAt     DateTime  @db.Timestamptz()
-  updatedAt     DateTime  @db.Timestamptz()
-  sessions      Session[]
-  accounts      Account[]
-  Project       Project[]
+  id                 String               @id @default(uuid())
+  name               String
+  email              String
+  emailVerified      Boolean
+  image              String               @default("https://placehold.co/400x400.png")
+  createdAt          DateTime             @db.Timestamptz()
+  updatedAt          DateTime             @db.Timestamptz()
+  sessions           Session[]
+  accounts           Account[]
+  Project            Project[]
+  DatabaseConnection DatabaseConnection[]
 
   @@unique([email])
   @@map("user")
@@ -76,14 +77,61 @@ model Verification {
 }
 
 model Project {
-  id          String   @id @default(uuid())
-  ownerId     String
-  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name        String
-  description String?
-  icon        String
-  createdAt   DateTime @default(now()) @db.Timestamptz()
-  updatedAt   DateTime @updatedAt @db.Timestamptz()
+  id                 String               @id @default(uuid())
+  ownerId            String
+  owner              User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name               String
+  description        String?
+  icon               String
+  createdAt          DateTime             @default(now()) @db.Timestamptz()
+  updatedAt          DateTime             @updatedAt @db.Timestamptz()
+  DatabaseConnection DatabaseConnection[]
+  Connection         Connection[]
 
   @@map("project")
+}
+
+enum DatabaseTypes {
+  Postgres
+  MySQL
+}
+
+model DatabaseConnection {
+  id           String        @id @default(uuid())
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  projectId    String
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  databaseType DatabaseTypes
+  // Abstract connection to make things more flexable
+  createdAt    DateTime      @default(now()) @db.Timestamptz()
+  updatedAt    DateTime      @updatedAt @db.Timestamptz()
+
+  connections Connection[]
+
+  @@map("databaseConnection")
+}
+
+model Connection {
+  id                   String             @id @default(uuid())
+  projectId            String
+  project              Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // DB Connection info
+  databaseConnectionId String
+  databaseConnection   DatabaseConnection @relation(fields: [databaseConnectionId], references: [id], onDelete: Cascade)
+  databaseType         DatabaseTypes
+  // Database Connection Parameters
+  hostname             String
+  port                 String
+  username             String
+  password             String?
+  ssl                  Boolean            @default(true)
+
+  // Other stuff
+  createdAt DateTime @default(now()) @db.Timestamptz()
+  updatedAt DateTime @updatedAt @db.Timestamptz()
+
+  @@map("database")
 }
