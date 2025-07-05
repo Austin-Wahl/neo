@@ -1,4 +1,4 @@
-import { APIResponse } from "@/app/types/types";
+import { APIResponse } from "@/app/(neo)/types/types";
 import { getConnection } from "@/data-access/connection";
 import NeoConnection from "@/services/connection-service";
 import getServerSideSession from "@/utils/getServerSideSession";

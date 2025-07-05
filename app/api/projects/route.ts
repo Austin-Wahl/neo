@@ -1,4 +1,4 @@
-import { APIResponse } from "@/app/types/types";
+import { APIResponse } from "@/app/(neo)/types/types";
 import { countProjects, getProjects } from "@/data-access/project";
 import { Prisma, Project } from "@/prisma/generated/prisma";
 import calculatePagination from "@/utils/calculate-pagination";

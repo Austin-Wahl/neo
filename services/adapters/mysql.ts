@@ -1,8 +1,7 @@
-// src/services/database/PostgresConnection.ts
 import {
   DatabaseConnectionConfig,
-  DbConnection,
   DbTransactionClient,
+  NeoAdapter,
   NeoSqlError,
 } from "@/services/types";
 import {
@@ -32,7 +31,7 @@ class MySQLTransactionClient implements DbTransactionClient {
   }
 }
 
-export class MySQLConnection implements DbConnection {
+export class MySQLAdapter implements NeoAdapter {
   private pool: Pool;
   private config: DatabaseConnectionConfig;
 
@@ -59,11 +58,17 @@ export class MySQLConnection implements DbConnection {
     this.pool = createPool(connectionOptions);
   }
 
-  async query<T>(sql: string, params?: unknown[]): Promise<T[]> {
+  async query<T>(
+    sql: string,
+    params?: unknown[]
+  ): Promise<{ rows: T[]; fields: unknown[] }> {
     const client = await this.pool.getConnection();
     try {
-      const [rows] = await client.query(sql, params);
-      return rows as T[];
+      const [rows, fields] = await client.query(sql, params);
+      return {
+        fields: fields as unknown[],
+        rows: rows as T[],
+      };
     } catch (error) {
       // Optionally, you can check for error.code or error.sqlState here
       throw this._error(error as QueryError, sql);
@@ -107,6 +112,44 @@ export class MySQLConnection implements DbConnection {
   async close(): Promise<void> {
     await this.pool.end();
     console.log("MySQL connection pool closed.");
+  }
+
+  async showDatabases(): Promise<Array<string>> {
+    const client = await this.pool.getConnection();
+    try {
+      const [rows] = await client.query("SHOW DATABASES");
+      return (rows as Array<{ Database: string }>).map((databaseObject) => {
+        return databaseObject.Database;
+      });
+    } catch (error) {
+      throw this._error(error as QueryError);
+    } finally {
+      client.release(); // Release the client back to the pool
+    }
+  }
+
+  async showSchemas(): Promise<Array<string>> {
+    return await this.showDatabases();
+  }
+
+  async showTables(schema: string): Promise<Array<string>> {
+    const client = await this.pool.getConnection();
+    try {
+      const [rows] = await client.query(
+        `SELECT TABLE_NAME
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME`,
+        [schema]
+      );
+
+      return (rows as Array<{ TABLE_NAME: string }>).map((table) => {
+        return table.TABLE_NAME;
+      });
+    } catch (error) {
+      throw this._error(error as QueryError);
+    } finally {
+      client.release(); // Release the client back to the pool
+    }
   }
 
   private _error(error: Error, sql?: string): Error {

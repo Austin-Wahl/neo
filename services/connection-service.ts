@@ -1,7 +1,7 @@
 import { DatabaseTypes } from "@/prisma/generated/prisma";
-import { MySQLConnection } from "@/services/database/mysql-connection";
-import { PostgresConnection } from "@/services/database/postgres-connection";
-import { DbConnection, NeoConnectionOptions } from "@/services/types";
+import { MySQLAdapter } from "@/services/adapters/mysql";
+import { PostgresAdapter } from "@/services/adapters/postgres";
+import { NeoAdapter, NeoConnectionOptions } from "@/services/types";
 import { createDatabaseConnectionSchema } from "@/validation-schemas/connection";
 import { z } from "zod";
 
@@ -17,7 +17,7 @@ type NeoConnectionInitProps = Pick<
 >;
 
 class NeoConnection {
-  private connection: DbConnection | undefined;
+  private connection: NeoAdapter | undefined;
 
   constructor() {}
 
@@ -25,7 +25,7 @@ class NeoConnection {
     this.connection = await this.connectionSerivceController(data);
   }
 
-  getConnection(): DbConnection {
+  getConnection(): NeoAdapter {
     try {
       if (!this.connection)
         throw new Error(
@@ -40,7 +40,7 @@ class NeoConnection {
 
   private connectionSerivceController = async (
     data: NeoConnectionInitProps
-  ): Promise<DbConnection> => {
+  ): Promise<NeoAdapter> => {
     try {
       const databaseProvider: DatabaseTypes =
         data.databaseProvider as DatabaseTypes;
@@ -54,7 +54,7 @@ class NeoConnection {
 
       switch (databaseProvider) {
         case "MySQL":
-          const mysqlConnection = new MySQLConnection({
+          const mysqlConnection = new MySQLAdapter({
             provider: data.databaseProvider as DatabaseTypes,
             connectionOptions: connectionOptions,
             ssl: data.ssl,
@@ -62,7 +62,7 @@ class NeoConnection {
 
           return mysqlConnection;
         case "Postgres":
-          const postgresConnection = new PostgresConnection({
+          const postgresConnection = new PostgresAdapter({
             provider: data.databaseProvider as DatabaseTypes,
             connectionOptions: connectionOptions,
             ssl: data.ssl,

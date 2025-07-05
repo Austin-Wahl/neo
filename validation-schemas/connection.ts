@@ -40,4 +40,5 @@ export const executeSqlSchema = z.object({
       message:
         "Query is to long. For queries longer than 10,000 characters, consider using a Database specific tool.",
     }),
+  database: z.string().optional(),
 });

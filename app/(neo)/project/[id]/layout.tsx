@@ -32,7 +32,9 @@ const ProjectLayout = async (props: LayoutProps) => {
   }
 
   // Get the project
-  const [projectError, project] = await getProject(projectId);
+  const [projectError, project] = await getProject({
+    where: { id: projectId },
+  });
   if (projectError) {
     return (
       <div className="p-4">
@@ -54,7 +56,7 @@ const ProjectLayout = async (props: LayoutProps) => {
     return <AccessDenied />;
   }
   return (
-    <div>
+    <div className="h-full overflow-hidden">
       <div className="w-full bg-secondary/30 p-4 pb-0 flex flex-col gap-4">
         <div className="flex gap-4 items-center">
           <Avatar className="w-[60px] h-[60px]">
@@ -93,7 +95,7 @@ const ProjectLayout = async (props: LayoutProps) => {
           </ProjectTabs>
         </div>
       </div>
-      <main className="p-4">{props.children}</main>
+      <main className="h-full">{props.children}</main>
     </div>
   );
 };

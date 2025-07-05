@@ -1,4 +1,4 @@
-import { APIResponse } from "@/app/types/types";
+import { APIResponse } from "@/app/(neo)/types/types";
 import { useState } from "react";
 
 const useTestConnection = () => {

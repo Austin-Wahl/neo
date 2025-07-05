@@ -1,7 +1,7 @@
 // src/services/database/PostgresConnection.ts
 import {
   DatabaseConnectionConfig,
-  DbConnection,
+  NeoAdapter,
   DbTransactionClient,
   NeoSqlError,
 } from "@/services/types";
@@ -26,7 +26,7 @@ class PostgresTransactionClient implements DbTransactionClient {
   }
 }
 
-export class PostgresConnection implements DbConnection {
+export class PostgresAdapter implements NeoAdapter {
   private pool: Pool;
   private config: DatabaseConnectionConfig;
 
@@ -46,6 +46,9 @@ export class PostgresConnection implements DbConnection {
             port: config.connectionOptions.port,
             user: config.connectionOptions.username,
             password: config.connectionOptions.password,
+            ...(config.connectionOptions.database
+              ? { database: config.connectionOptions.database }
+              : {}),
           }),
       ...(config.ssl ? { ssl: config.ssl } : {}),
     };
@@ -59,11 +62,17 @@ export class PostgresConnection implements DbConnection {
     });
   }
 
-  async query<T>(sql: string, params?: unknown[]): Promise<T[]> {
+  async query<T>(
+    sql: string,
+    params?: unknown[]
+  ): Promise<{ rows: T[]; fields: unknown[] }> {
     const client = await this.pool.connect(); // Get a client from the pool
     try {
       const res = await client.query(sql, params);
-      return res.rows as T[];
+      return {
+        fields: res.fields,
+        rows: res.rows,
+      };
     } catch (error) {
       throw this._error(error as DatabaseError, sql);
     } finally {
@@ -106,6 +115,64 @@ export class PostgresConnection implements DbConnection {
   async close(): Promise<void> {
     await this.pool.end();
     console.log("PostgreSQL connection pool closed.");
+  }
+
+  async showDatabases(): Promise<Array<string>> {
+    const client = await this.pool.connect(); // Get a client from the pool
+    try {
+      const res = await client.query(
+        "SELECT datname FROM pg_database WHERE datistemplate = false;"
+      );
+
+      return res.rows.map((databaseObject) => {
+        return databaseObject.datname;
+      });
+    } catch (error) {
+      throw this._error(error as DatabaseError);
+    } finally {
+      client.release(); // Release the client back to the pool
+    }
+  }
+
+  async showSchemas(): Promise<Array<string>> {
+    const client = await this.pool.connect(); // Get a client from the pool
+    try {
+      const res = await client.query(
+        `SELECT schema_name
+        FROM information_schema.schemata
+        WHERE schema_name NOT IN ('pg_catalog', 'information_schema')
+        ORDER BY schema_name;`
+      );
+
+      return res.rows.map((schema: { schema_name: string }) => {
+        return schema.schema_name;
+      });
+    } catch (error) {
+      throw this._error(error as DatabaseError);
+    } finally {
+      client.release(); // Release the client back to the pool
+    }
+  }
+
+  async showTables(schema: string): Promise<Array<string>> {
+    const client = await this.pool.connect(); // Get a client from the pool
+    try {
+      const res = await client.query(
+        `SELECT tablename
+        FROM pg_tables
+        WHERE schemaname=?
+        ORDER BY tablename;`,
+        [schema]
+      );
+
+      return res.rows.map((table: { tablename: string }) => {
+        return table.tablename;
+      });
+    } catch (error) {
+      throw this._error(error as DatabaseError);
+    } finally {
+      client.release(); // Release the client back to the pool
+    }
   }
 
   private _error(error: Error, sql?: string): Error {

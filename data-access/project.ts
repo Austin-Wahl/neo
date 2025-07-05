@@ -36,13 +36,11 @@ export const getProjects = async (
 };
 
 // DAL Function for retrieving a specific project
-export const getProject = async (id: string): DataAccessResponse<Project> => {
+export const getProject = async (
+  props: Prisma.ProjectFindUniqueArgs
+): DataAccessResponse<Project> => {
   try {
-    const data = await prisma.project.findUnique({
-      where: {
-        id: id,
-      },
-    });
+    const data = await prisma.project.findUnique(props);
 
     return [null, data];
   } catch (error) {

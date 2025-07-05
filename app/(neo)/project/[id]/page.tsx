@@ -22,7 +22,7 @@ const ProjectPage = async ({ params }: PageProps) => {
     projectId: id,
   });
   return (
-    <div className="flex flex-col gap-4 container">
+    <div className="flex flex-col gap-4 container p-4">
       <CreateConnection projectId={id} />
       <div>
         {connectionsError || countError ? (

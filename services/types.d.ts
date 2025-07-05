@@ -1,13 +1,16 @@
 import { DatabaseTypes } from "@/prisma/generated/prisma";
 import PG from "pg";
-export interface DbConnection {
+export interface NeoAdapter {
   /**
    * Executes a database query.
    * @param sql - The SQL query string.
    * @param params - Optional parameters for the query.
    * @returns A Promise resolving to an array of rows.
    */
-  query<T>(sql: string, params?: unknown[]): Promise<T[]>;
+  query<T>(
+    sql: string,
+    params?: unknown[]
+  ): Promise<{ rows: T[]; fields: unknown[] }>;
 
   /**
    * Begins a database transaction.
@@ -30,6 +33,14 @@ export interface DbConnection {
   // getSchema(): Promise<DatabaseSchema>;
   execute(sql: string, params?: unknown[]): Promise<number>; // For non-SELECT operations returning row count
 
+  // Retrieves a list of databases within the database server
+  showDatabases(): Promise<Array<string>>;
+
+  // Retrieves a list of schemas within the database
+  showSchemas(): Promise<Array<string>>;
+
+  // Retrieves a list of tables within the database schema
+  showTables(schema: string): Promise<Array<string>>;
   /**
    * Converts error message from databases into a Neo compatible error format.
    * Do not throw errors directly, call this method to adapt errors.

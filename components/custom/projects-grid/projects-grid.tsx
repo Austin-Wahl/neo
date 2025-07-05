@@ -1,6 +1,6 @@
 "use client";
 
-import { APIResponse } from "@/app/types/types";
+import { APIResponse } from "@/app/(neo)/types/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Project } from "@/prisma/generated/prisma";
 import calculatePagination from "@/utils/calculate-pagination";

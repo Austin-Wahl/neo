@@ -1,4 +1,4 @@
-import { Pagination } from "@/app/types/types";
+import { Pagination } from "@/app/(neo)/types/types";
 
 function calculatePagination({
   offset,

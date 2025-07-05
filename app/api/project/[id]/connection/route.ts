@@ -1,4 +1,4 @@
-import { APIResponse } from "@/app/types/types";
+import { APIResponse } from "@/app/(neo)/types/types";
 import { createConnection } from "@/data-access/connection";
 import { getProject } from "@/data-access/project";
 import { DatabaseTypes } from "@/prisma/generated/prisma";
@@ -51,7 +51,7 @@ export const POST = async (
     const validation = createDatabaseConnectionSchema.safeParse(body);
 
     // Find the project
-    const [projectError, project] = await getProject(id);
+    const [projectError, project] = await getProject({ where: { id: id } });
     if (projectError) throw projectError;
 
     if (!project) {

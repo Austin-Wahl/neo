@@ -127,11 +127,11 @@ const DBConnection = ({
               Raw SQL Editor
             </DropdownMenuItem>
             <Link
-              href={`/project/${connection.projectId}/connection/${connection.id}`}
+              href={`/studio/project/${connection.projectId}/connection/${connection.id}`}
             >
               <DropdownMenuItem>
                 <Grid />
-                Open PANES
+                Open Studio
               </DropdownMenuItem>
             </Link>
           </DropdownMenuContent>

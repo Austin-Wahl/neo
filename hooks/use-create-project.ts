@@ -1,4 +1,4 @@
-import { APIResponse } from "@/app/types/types";
+import { APIResponse } from "@/app/(neo)/types/types";
 import { Project } from "@/prisma/generated/prisma";
 import { createProjectSchema } from "@/validation-schemas/project";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

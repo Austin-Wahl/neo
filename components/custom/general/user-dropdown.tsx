@@ -28,7 +28,7 @@ const UserDropdown = ({ user }: { user: User }) => {
           <UserIcon />
           Account
         </DropdownLink>
-        <DropdownLink href="/projects">
+        <DropdownLink href="/">
           <Wrench />
           Projects
         </DropdownLink>

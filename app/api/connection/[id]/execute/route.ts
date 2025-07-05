@@ -1,4 +1,4 @@
-import { APIResponse } from "@/app/types/types";
+import { APIResponse } from "@/app/(neo)/types/types";
 import { getConnection } from "@/data-access/connection";
 import NeoConnection from "@/services/connection-service";
 import { NeoSqlError } from "@/services/types";
@@ -84,6 +84,7 @@ export const POST = async (
       port: connection.connection!.port,
       ssl: connection.connection!.ssl,
       username: connection.connection!.username,
+      ...(body.database ? { database: body.database } : {}),
     });
     const connectionInstance = neo.getConnection();
     const connected = await connectionInstance.testConnection();
@@ -109,7 +110,12 @@ export const POST = async (
           data: {
             result: results,
           },
-        } as APIResponse<{ result: [unknown] }>,
+        } as APIResponse<{
+          result: {
+            fields: unknown[];
+            rows: unknown[];
+          };
+        }>,
         { status: 200 }
       );
     } catch (error) {

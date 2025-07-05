@@ -1,4 +1,4 @@
-import { APIResponse } from "@/app/types/types";
+import { APIResponse } from "@/app/(neo)/types/types";
 import { createProject } from "@/data-access/project";
 import { Project } from "@/prisma/generated/prisma";
 import getServerSideSession from "@/utils/getServerSideSession";
