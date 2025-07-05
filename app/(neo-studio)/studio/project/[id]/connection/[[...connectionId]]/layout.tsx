@@ -2,9 +2,10 @@ import Navbar from "@/components/custom/neo-studio/navbar/navbar";
 import Sidebar from "@/components/custom/neo-studio/sidebar/sidebar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { getConnections } from "@/data-access/connection";
+import { getConnection, getConnections } from "@/data-access/connection";
 import { getProjects } from "@/data-access/project";
 import SqlEditorProvider from "@/providers/sql-editor-provider";
+import SupportedDatabase from "@/supported-databases";
 import getServerSideSession from "@/utils/getServerSideSession";
 import { AlertCircle } from "lucide-react";
 import { cookies } from "next/headers";
@@ -65,7 +66,13 @@ export default async function NoNavLayout({
     },
   });
 
-  if (connectionError) {
+  const [currentConnectionError, currentConnection] = await getConnection({
+    where: {
+      id: connectionId,
+    },
+  });
+
+  if (connectionError || currentConnectionError) {
     return (
       <div className="w-screen h-screen flex items-center justify-center min-h-[400px] p-4">
         <Alert variant="destructive" className="max-w-[400px]">
@@ -92,6 +99,12 @@ export default async function NoNavLayout({
       </div>
     );
   }
+
+  const dbType = currentConnection!.databaseType;
+  const exploreType = SupportedDatabase[dbType.toUpperCase()].exploreType;
+  const identifierQuote =
+    SupportedDatabase[dbType.toUpperCase()].identifierQuote;
+
   return (
     <SqlEditorProvider>
       <SidebarProvider defaultOpen={defaultOpen}>
@@ -108,6 +121,8 @@ export default async function NoNavLayout({
           <Sidebar
             className="h-[calc(100%-102px)] top-[94px] ml-2"
             connectionId={connectionId}
+            exploreType={exploreType}
+            identifierQuote={identifierQuote}
           />
           <SidebarInset className="relative max-h-[calc(100%-16px)] overflow-hidden w-full rounded-lg">
             <div className="absolute overflow-auto w-full h-full">

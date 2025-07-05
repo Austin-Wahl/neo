@@ -167,7 +167,7 @@ export const ColumnResizer = <TData, TValue>({
   header: Header<TData, TValue>;
 }) => {
   if (!header.column.getCanResize()) return null;
-  console.log("setting size to", header.getSize());
+
   return (
     <div
       {...{
@@ -202,7 +202,7 @@ function renderCellValue(value: unknown): string | JSX.Element {
           <AlertCircle />
           <AlertTitle>Failed to render results</AlertTitle>
         </Alert>
-      ); // Handle invalid JSON gracefully
+      ); // Handle invalid JSON gracefully. In the event their is some issue, I want to indicate it for UX purposes
     }
   }
 

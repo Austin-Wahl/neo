@@ -160,8 +160,8 @@ export class PostgresAdapter implements NeoAdapter {
       const res = await client.query(
         `SELECT tablename
         FROM pg_tables
-        WHERE schemaname=?
-        ORDER BY tablename;`,
+        WHERE schemaname = $1
+        ORDER BY tablename`,
         [schema]
       );
 

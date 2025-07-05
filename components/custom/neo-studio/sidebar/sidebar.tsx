@@ -27,6 +27,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -38,6 +39,7 @@ import {
 } from "@/components/ui/tooltip";
 import useSqlEditor from "@/hooks/use-sql-editor";
 import { cn } from "@/lib/utils";
+import { SupportedDatabaseProps } from "@/supported-databases";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircleIcon,
@@ -51,16 +53,20 @@ import {
   Table,
   Trash,
 } from "lucide-react";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 
 type SidebarProps = React.ComponentProps<typeof ShadSidebar> & {
   connectionId: string;
-};
+} & SupportedDatabaseProps;
 
-const Sidebar = ({ connectionId, ...props }: SidebarProps) => {
+const Sidebar = ({
+  connectionId,
+  exploreType,
+  identifierQuote,
+  ...props
+}: SidebarProps) => {
   const [error, setError] = useState("");
   const { open } = useSidebar();
-
   const { data, status, refetch, isRefetching } = useQuery<
     APIResponse<Array<string>>
   >({
@@ -99,6 +105,7 @@ const Sidebar = ({ connectionId, ...props }: SidebarProps) => {
 
   return (
     <ShadSidebar variant="floating" {...props} collapsible="icon">
+      <SidebarRail />
       <SidebarHeader>
         <div
           className={`flex items-center ${
@@ -177,10 +184,12 @@ const Sidebar = ({ connectionId, ...props }: SidebarProps) => {
             !isRefetching &&
             data.items!.map((database) => {
               return (
-                <DatabaseSchema
+                <DatabaseExplorer
+                  exploreType={exploreType}
                   database={database}
                   key={database}
                   connectionId={connectionId}
+                  identifierQuote={identifierQuote}
                 />
               );
             })}
@@ -203,13 +212,52 @@ const Sidebar = ({ connectionId, ...props }: SidebarProps) => {
   );
 };
 
-const DatabaseSchema = ({
+const DatabaseExplorer = ({
+  exploreType,
+  identifierQuote,
   database,
   connectionId,
 }: {
+  connectionId: string;
+  database: string;
+} & SupportedDatabaseProps) => {
+  // Different Databases are "explored" different. Some return schemas and some return databases and tables
+  // The type of explore required will determine the UI
+
+  if (exploreType === "DATABASE/SCHEMA/TABLES") {
+    return (
+      <DatabaseSchema
+        connectionId={connectionId}
+        database={database}
+        exploreType={exploreType}
+        identifierQuote={identifierQuote}
+      />
+    );
+  }
+
+  if (exploreType === "DATABASE/TABLES") {
+    return (
+      <SchemaTable
+        connectionId={connectionId}
+        database={database}
+        schema={database}
+        icon={<Database />}
+        exploreType={exploreType}
+        identifierQuote={identifierQuote}
+      />
+    );
+  }
+};
+
+const DatabaseSchema = ({
+  database,
+  connectionId,
+  identifierQuote,
+  exploreType,
+}: {
   database: string;
   connectionId: string;
-}) => {
+} & SupportedDatabaseProps) => {
   const [error, setError] = useState("");
   const { open } = useSidebar();
   const [init, setInit] = useState(false);
@@ -260,56 +308,56 @@ const DatabaseSchema = ({
           refetch();
         }}
       >
-        <SidebarMenuItem>
-          <ContextMenuTrigger asChild>
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton tooltip={database}>
-                <Database />
-                {database}
-                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible_db:rotate-90" />
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
-          </ContextMenuTrigger>
-          <CollapsibleContent>
-            {status === "pending" || isRefetching
-              ? Array.from({ length: 5 }).map((_, index) => (
-                  <SidebarMenuSubItem key={index} className="list-none">
-                    {open ? <SidebarMenuSkeleton /> : null}
-                  </SidebarMenuSubItem>
-                ))
-              : null}
-            <SidebarMenuSub>
-              {status === "error" || isRefetchError ? (
-                <Alert variant="destructive">
-                  <AlertCircleIcon className="mr-2" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              ) : null}
+        <ContextMenuTrigger asChild>
+          <CollapsibleTrigger asChild>
+            <SidebarMenuButton tooltip={database}>
+              <Database />
+              {database}
+              <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible_db:rotate-90" />
+            </SidebarMenuButton>
+          </CollapsibleTrigger>
+        </ContextMenuTrigger>
+        <CollapsibleContent>
+          {status === "pending" || isRefetching
+            ? Array.from({ length: 5 }).map((_, index) => (
+                <SidebarMenuSubItem key={index} className="list-none">
+                  {open ? <SidebarMenuSkeleton /> : null}
+                </SidebarMenuSubItem>
+              ))
+            : null}
+          <SidebarMenuSub>
+            {status === "error" || isRefetchError ? (
+              <Alert variant="destructive">
+                <AlertCircleIcon className="mr-2" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
 
-              {status === "success" && !isRefetching
-                ? data.items!.map((schema, i) => {
-                    return (
-                      <SchemaTable
-                        key={i}
-                        connectionId={connectionId}
-                        database={database}
-                        schema={schema}
-                      />
-                    );
-                  })
-                : null}
-              {status === "success" &&
-                !isRefetching &&
-                data.items!.length === 0 && (
-                  <Alert>
-                    <Database className="mr-2" />
-                    <AlertTitle>No Schemas</AlertTitle>
-                  </Alert>
-                )}
-            </SidebarMenuSub>
-          </CollapsibleContent>
-        </SidebarMenuItem>
+            {status === "success" && !isRefetching
+              ? data.items!.map((schema, i) => {
+                  return (
+                    <SchemaTable
+                      key={i}
+                      connectionId={connectionId}
+                      database={database}
+                      schema={schema}
+                      exploreType={exploreType}
+                      identifierQuote={identifierQuote}
+                    />
+                  );
+                })
+              : null}
+            {status === "success" &&
+              !isRefetching &&
+              data.items!.length === 0 && (
+                <Alert>
+                  <Database className="mr-2" />
+                  <AlertTitle>No Schemas</AlertTitle>
+                </Alert>
+              )}
+          </SidebarMenuSub>
+        </CollapsibleContent>
       </Collapsible>
       <ContextMenuContent>
         <ContextMenuItem onClick={() => refetch()}>
@@ -330,11 +378,14 @@ const SchemaTable = ({
   database,
   schema,
   connectionId,
+  icon,
+  identifierQuote,
 }: {
   database: string;
   schema: string;
   connectionId: string;
-}) => {
+  icon?: ReactNode;
+} & SupportedDatabaseProps) => {
   const { setSql, setDatabase } = useSqlEditor();
   const [error, setError] = useState("");
   const { open } = useSidebar();
@@ -393,62 +444,61 @@ const SchemaTable = ({
           refetch();
         }}
       >
-        <SidebarMenuItem>
-          <ContextMenuTrigger asChild>
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton tooltip={schema}>
-                <Map />
-                {schema}
-                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
-          </ContextMenuTrigger>
-          <CollapsibleContent>
-            {status === "pending" || isRefetching
-              ? Array.from({ length: 5 }).map((_, index) => (
-                  <SidebarMenuSubItem key={index} className="list-none">
-                    {open ? <SidebarMenuSkeleton /> : null}
-                  </SidebarMenuSubItem>
-                ))
-              : null}
-            <SidebarMenuSub>
-              {status === "error" || isRefetchError ? (
-                <Alert variant="destructive">
-                  <AlertCircleIcon className="mr-2" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              ) : null}
+        <ContextMenuTrigger asChild>
+          <CollapsibleTrigger asChild>
+            <SidebarMenuButton tooltip={schema}>
+              {icon ? icon : <Map />}
+              {schema}
+              <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+            </SidebarMenuButton>
+          </CollapsibleTrigger>
+        </ContextMenuTrigger>
+        <CollapsibleContent>
+          {status === "pending" || isRefetching
+            ? Array.from({ length: 5 }).map((_, index) => (
+                <SidebarMenuSubItem key={index} className="list-none">
+                  {open ? <SidebarMenuSkeleton /> : null}
+                </SidebarMenuSubItem>
+              ))
+            : null}
+          <SidebarMenuSub>
+            {status === "error" || isRefetchError ? (
+              <Alert variant="destructive">
+                <AlertCircleIcon className="mr-2" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
 
-              {status === "success" && !isRefetching
-                ? data.items!.map((item, i) => {
-                    return (
-                      <SidebarMenuSubItem
-                        key={i}
-                        onClick={() => {
-                          setSql(`SELECT * FROM ${schema}."${item}"`);
-                          setDatabase(database);
-                        }}
-                      >
-                        <SidebarMenuSubButton className="overflow-hidden text-ellipsis whitespace-nowrap">
-                          <Table />
-                          {item}
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    );
-                  })
-                : null}
-              {status === "success" &&
-                !isRefetching &&
-                data.items!.length === 0 && (
-                  <Alert>
-                    <Database className="mr-2" />
-                    <AlertTitle>No Tables</AlertTitle>
-                  </Alert>
-                )}
-            </SidebarMenuSub>
-          </CollapsibleContent>
-        </SidebarMenuItem>
+            {status === "success" && !isRefetching
+              ? data.items!.map((item, i) => {
+                  return (
+                    <SidebarMenuSubButton
+                      className="overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer select-none"
+                      key={i}
+                      onClick={() => {
+                        setSql(
+                          `SELECT * FROM ${schema}.${identifierQuote}${item}${identifierQuote}`
+                        );
+                        setDatabase(database);
+                      }}
+                    >
+                      <Table />
+                      {item}
+                    </SidebarMenuSubButton>
+                  );
+                })
+              : null}
+            {status === "success" &&
+              !isRefetching &&
+              data.items!.length === 0 && (
+                <Alert>
+                  <Database className="mr-2" />
+                  <AlertTitle>No Tables</AlertTitle>
+                </Alert>
+              )}
+          </SidebarMenuSub>
+        </CollapsibleContent>
       </Collapsible>
       <ContextMenuContent>
         <ContextMenuItem onClick={() => refetch()}>

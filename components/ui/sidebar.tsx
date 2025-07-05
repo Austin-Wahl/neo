@@ -35,11 +35,13 @@ const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 type SidebarContextProps = {
   state: "expanded" | "collapsed";
   open: boolean;
+  width: string;
   setOpen: (open: boolean) => void;
   openMobile: boolean;
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
+  setWidth: (width: string) => void;
 };
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
@@ -88,6 +90,22 @@ function SidebarProvider({
     [setOpenProp, open]
   );
 
+  const [_widthState, _setWidthState] = React.useState(SIDEBAR_WIDTH);
+  const width = _widthState;
+  const setWidthState = React.useCallback(
+    (value: string | ((value: string) => string)) => {
+      const widthState = typeof value === "function" ? value(width) : value;
+      console.log(widthState);
+      _setWidthState(widthState);
+
+      // This sets the cookie to keep the sidebar state.
+      document.cookie = `${
+        SIDEBAR_COOKIE_NAME + "_WIDTH"
+      }=${widthState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+    },
+    [width]
+  );
+
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
@@ -122,8 +140,20 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      width,
+      setWidth: setWidthState,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [
+      state,
+      open,
+      setOpen,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+      width,
+      setWidthState,
+    ]
   );
 
   return (
@@ -133,7 +163,7 @@ function SidebarProvider({
           data-slot="sidebar-wrapper"
           style={
             {
-              "--sidebar-width": SIDEBAR_WIDTH,
+              "--sidebar-width": width,
               "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
               ...style,
             } as React.CSSProperties
@@ -218,7 +248,7 @@ function Sidebar({
       <div
         data-slot="sidebar-gap"
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          `relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear`,
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -280,16 +310,44 @@ function SidebarTrigger({
 }
 
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
-  const { toggleSidebar } = useSidebar();
+  const { setWidth } = useSidebar(); // Function to update sidebar width
+  const [isResizing, setIsResizing] = React.useState(false); // Track resizing state
+
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isResizing) {
+        const newWidth = Math.max(200, e.clientX); // Minimum width of 200px
+        if (newWidth < 500) setWidth(newWidth + "px"); // Update sidebar width}
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false); // Stop resizing
+    };
+
+    if (isResizing) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, setWidth]);
+
+  const handleMouseDown = () => {
+    setIsResizing(true); // Start resizing
+  };
 
   return (
     <button
       data-sidebar="rail"
       data-slot="sidebar-rail"
-      aria-label="Toggle Sidebar"
+      aria-label="Resize Sidebar"
       tabIndex={-1}
-      onClick={toggleSidebar}
-      title="Toggle Sidebar"
+      onMouseDown={handleMouseDown}
+      title="Resize Sidebar"
       className={cn(
         "hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] sm:flex",
         "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",

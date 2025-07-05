@@ -104,6 +104,7 @@ export const POST = async (
 
     try {
       const results = await connectionInstance.query(body.sql);
+
       return NextResponse.json(
         {
           message: "Query executed successfully!",

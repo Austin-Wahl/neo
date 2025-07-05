@@ -1,6 +1,7 @@
 "use client";
 
 import Menubar from "@/components/custom/neo-studio/navbar/menu-bar";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -8,9 +9,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/connection";
+import useSqlEditor from "@/hooks/use-sql-editor";
 import { Project } from "@/prisma/generated/prisma";
+import { Plug, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const Navbar = ({
   projects,
@@ -23,6 +32,7 @@ const Navbar = ({
   connectionId: string;
   id: string;
 }) => {
+  const { database, setDatabase } = useSqlEditor();
   const router = useRouter();
 
   const handleProjectChange = (projectId: string) => {
@@ -50,6 +60,28 @@ const Navbar = ({
           projects={projects!}
         />
       </div>
+      {database && (
+        <div className="rounded-lg border flex items-center text-xs justify-between gap-4 overflow-hidden">
+          <div className="p-2 flex items-center gap-2">
+            <Plug size={12} />
+            <p>{database}</p>
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => {
+                  setDatabase("");
+                  toast("No Database is selected.");
+                }}
+                className="!bg-background hover:bg-accent rounded-none border-l-[1px] border-border cursor-pointer hover:text-primary text-muted-foreground"
+              >
+                <X />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Unselect Database</TooltipContent>
+          </Tooltip>
+        </div>
+      )}
       <div className="flex items-center gap-4">
         <Select defaultValue={id} onValueChange={handleProjectChange}>
           <SelectTrigger className="w-[180px]">

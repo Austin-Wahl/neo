@@ -9,7 +9,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/connection";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PuffLoader } from "react-spinners";
 
 const Studio = ({
@@ -27,6 +27,9 @@ const Studio = ({
     };
   }> | null>(null);
 
+  useEffect(() => {
+    console.log(data);
+  }, [data]);
   return (
     <ResizablePanelGroup
       direction="horizontal"
@@ -59,7 +62,7 @@ const Studio = ({
         defaultSize={77}
         className="pl-4 min-w-[400px] overflow-scroll"
       >
-        {data?.data ? (
+        {data?.data && requestState === "loaded" ? (
           <DataGrid
             fields={data.data!.result.fields}
             rows={data.data!.result.rows}

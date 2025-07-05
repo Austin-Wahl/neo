@@ -171,7 +171,7 @@ const DatabaseConnectionDetails = ({
           <DialogTitle>Connection Details: {connection.name}</DialogTitle>
           <DialogDescription>
             Details for your {connection.databaseType} connection to{" "}
-            {connection.connection!.hostname}.
+            {connection.connection!.hostname}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col w-full gap-4">

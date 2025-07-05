@@ -94,12 +94,18 @@ const SQLEditor = ({
   }, [code, connection.id, database, setData, setRequestState]);
 
   useEffect(() => {
-    if (!sql) return;
     setCode(sql);
+
+    setInit(false);
+  }, [sql, database]);
+
+  useEffect(() => {
+    if (!sql || init) return;
+    console.log("SQL Changes", sql, init);
     setDatabase(databaseContext);
     handleExecute();
     setInit(true);
-  }, [databaseContext, handleExecute, init, sql]);
+  }, [sql, init]);
 
   return (
     <div {...props}>
