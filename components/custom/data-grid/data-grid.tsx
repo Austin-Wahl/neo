@@ -22,12 +22,14 @@ import { JSX, useEffect, useRef, useState } from "react";
 const DataGrid = ({
   fields,
   rows,
+  fullScreen,
 }: {
   fields: Array<{ name: string }>;
   rows: Record<string, unknown>[];
   isNextPageLoading?: boolean;
   loadNextPage?: (startIndex: number, stopIndex: number) => Promise<void>;
   hasNextPage?: boolean;
+  fullScreen: boolean;
 }) => {
   const [colSizing, setColSizing] = useState<ColumnSizingState>({});
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -51,9 +53,6 @@ const DataGrid = ({
     },
   });
 
-  useEffect(() => {
-    console.log(colSizing);
-  }, [colSizing]);
   const rowVirtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
     estimateSize: () => 33,
@@ -75,23 +74,33 @@ const DataGrid = ({
   });
 
   useEffect(() => {
-    const updateSize = () => {
+    const resizeObserver = new ResizeObserver(() => {
       if (parentRef.current) {
         setContainerSize({
           width: parentRef.current.offsetWidth,
           height: parentRef.current.offsetHeight,
         });
       }
+    });
+
+    if (parentRef.current) {
+      resizeObserver.observe(parentRef.current);
+    }
+
+    return () => {
+      if (parentRef.current) {
+        resizeObserver.unobserve(parentRef.current);
+      }
     };
-
-    updateSize();
-
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
   }, []);
 
   return (
-    <div className="w-full h-full" ref={parentRef}>
+    <div
+      className={`w-full h-full bg-background ${
+        fullScreen ? "!absolute !z-[10] !w-full !left-0" : ""
+      }`}
+      ref={parentRef}
+    >
       <div
         ref={tableContainerRef}
         className="rounded-md border overflow-auto"

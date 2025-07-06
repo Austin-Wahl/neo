@@ -1,3 +1,4 @@
+"use client";
 import {
   MenubarContent,
   MenubarItem,
@@ -12,9 +13,20 @@ import {
 } from "@/components/ui/menubar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/connection";
+import useDataGrid from "@/hooks/use-datagrid";
 import { Project } from "@/prisma/generated/prisma";
-import { Book, Code, Download, Table, Upload, Wrench } from "lucide-react";
+import {
+  Book,
+  Code,
+  Download,
+  Expand,
+  Minimize,
+  Table,
+  Upload,
+  Wrench,
+} from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const Menubar = ({
   projects,
@@ -27,6 +39,8 @@ const Menubar = ({
   connectionId: string;
   id: string;
 }) => {
+  const { fullScreen, setFullScreen, isActive } = useDataGrid();
+  const router = useRouter();
   return (
     <ShadMenubar className="border-none">
       <MenubarMenu>
@@ -53,6 +67,9 @@ const Menubar = ({
                     <MenubarItem
                       key={project.id}
                       className={id == project.id ? "bg-accent" : ""}
+                      onClick={() =>
+                        router.push(`/studio/project/${id}/connection`)
+                      }
                     >
                       {project.name}
                     </MenubarItem>
@@ -72,13 +89,13 @@ const Menubar = ({
                       className={
                         connectionId == connection.id ? "bg-accent" : ""
                       }
+                      onClick={() =>
+                        router.push(
+                          `/studio/project/${id}/connection/${connection.id}`
+                        )
+                      }
                     >
-                      <Link
-                        href={`/studio/project/${id}/connection/${connection.id}`}
-                        className={`cursor-pointer`}
-                      >
-                        {connection.name}
-                      </Link>
+                      {connection.name}
                     </MenubarItem>
                   );
                 })}
@@ -104,9 +121,28 @@ const Menubar = ({
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>
-        <MenubarTrigger>Results</MenubarTrigger>
+        <MenubarTrigger>View</MenubarTrigger>
         <MenubarContent>
-          <MenubarItem>
+          <MenubarItem
+            onClick={(e) => {
+              e.stopPropagation();
+              setFullScreen((prev) => !prev);
+            }}
+            disabled={!isActive}
+          >
+            {fullScreen ? (
+              <>
+                <Minimize />
+                Minimize Grid
+              </>
+            ) : (
+              <>
+                <Expand />
+                Expand Grid
+              </>
+            )}
+          </MenubarItem>
+          <MenubarItem disabled={!isActive}>
             <Table />
             Table Layout
           </MenubarItem>
@@ -115,10 +151,7 @@ const Menubar = ({
       <MenubarMenu>
         <MenubarTrigger>Help</MenubarTrigger>
         <MenubarContent>
-          <Link
-            href={process.env.NEXT_PUBLIC_DOCS_LINK as string}
-            target="_blank"
-          >
+          <Link href={process.env.NEXT_PUBLIC_DOCS_LINK ?? ""} target="_blank">
             <MenubarItem>
               <Book />
               Docs

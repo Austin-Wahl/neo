@@ -4,11 +4,12 @@ import { APIResponse } from "@/app/(neo)/types/types";
 import DataGrid from "@/components/custom/data-grid/data-grid";
 import SQLEditor from "@/components/custom/sql-editor/sql-editor";
 import {
-  ResizablePanelGroup,
-  ResizablePanel,
   ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/connection";
+import useDataGrid from "@/hooks/use-datagrid";
 import { useEffect, useState } from "react";
 import { PuffLoader } from "react-spinners";
 
@@ -17,6 +18,7 @@ const Studio = ({
 }: {
   connection: DatabaseConnectionWithConnectionDetails;
 }) => {
+  const { fullScreen, setIsActive } = useDataGrid();
   const [requestState, setRequestState] = useState<
     "loading" | "loaded" | "error" | null
   >(null);
@@ -28,7 +30,9 @@ const Studio = ({
   }> | null>(null);
 
   useEffect(() => {
-    console.log(data);
+    if (data) {
+      setIsActive(true);
+    }
   }, [data]);
   return (
     <ResizablePanelGroup
@@ -51,7 +55,7 @@ const Studio = ({
           <ResizableHandle withHandle={true} />
           <ResizablePanel defaultSize={50}>
             <div className="flex h-full items-center justify-center p-6">
-              <span className="font-semibold">Scratch pad</span>
+              <span className="font-semibold">Scratchpad</span>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
@@ -66,6 +70,7 @@ const Studio = ({
           <DataGrid
             fields={data.data!.result.fields}
             rows={data.data!.result.rows}
+            fullScreen={fullScreen}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center select-none">

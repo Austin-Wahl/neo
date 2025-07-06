@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getConnection, getConnections } from "@/data-access/connection";
 import { getProjects } from "@/data-access/project";
+import GridProvider from "@/providers/grid-provider";
 import SqlEditorProvider from "@/providers/sql-editor-provider";
 import SupportedDatabase from "@/supported-databases";
 import getServerSideSession from "@/utils/getServerSideSession";
@@ -106,31 +107,33 @@ export default async function NoNavLayout({
     SupportedDatabase[dbType.toUpperCase()].identifierQuote;
 
   return (
-    <SqlEditorProvider>
-      <SidebarProvider defaultOpen={defaultOpen}>
-        <Navbar
-          connectionId={connectionId}
-          connections={connections!}
-          id={id}
-          projects={projects!}
-        />
-        {/* <div className="w-full min-h-[calc(100vh-102px)] bg-red-500 flex mt-[102px] p-4">
+    <GridProvider>
+      <SqlEditorProvider>
+        <SidebarProvider defaultOpen={defaultOpen}>
+          <Navbar
+            connectionId={connectionId}
+            connections={connections!}
+            id={id}
+            projects={projects!}
+          />
+          {/* <div className="w-full min-h-[calc(100vh-102px)] bg-red-500 flex mt-[102px] p-4">
         
       </div> */}
-        <div className="w-full min-h-[calc(100vh-102px)] max-h-[calc(100%-102px)] overflow-visible gap-3 flex mt-[102px] pr-4">
-          <Sidebar
-            className="h-[calc(100%-102px)] top-[94px] ml-2"
-            connectionId={connectionId}
-            exploreType={exploreType}
-            identifierQuote={identifierQuote}
-          />
-          <SidebarInset className="relative max-h-[calc(100%-16px)] overflow-hidden w-full rounded-lg">
-            <div className="absolute overflow-auto w-full h-full">
-              {children}
-            </div>
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
-    </SqlEditorProvider>
+          <div className="w-full min-h-[calc(100vh-102px)] max-h-[calc(100%-102px)] overflow-visible gap-3 flex mt-[102px] pr-4">
+            <Sidebar
+              className="h-[calc(100%-102px)] top-[94px] ml-2"
+              connectionId={connectionId}
+              exploreType={exploreType}
+              identifierQuote={identifierQuote}
+            />
+            <SidebarInset className="relative max-h-[calc(100%-16px)] overflow-hidden w-full rounded-lg">
+              <div className="absolute overflow-auto w-full h-full">
+                {children}
+              </div>
+            </SidebarInset>
+          </div>
+        </SidebarProvider>
+      </SqlEditorProvider>
+    </GridProvider>
   );
 }
