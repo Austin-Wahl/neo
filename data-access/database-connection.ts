@@ -35,7 +35,7 @@ export const createConnection = async (opts: {
     Connection,
     "hostname" | "password" | "port" | "ssl" | "username"
   >;
-}): DataAccessResponse<DatabaseConnection> => {
+}): DataAccessResponse<DatabaseConnectionWithConnectionDetails> => {
   try {
     const data = await prisma.$transaction(async () => {
       const databaseConnection = await prisma.databaseConnection.create({
@@ -51,10 +51,34 @@ export const createConnection = async (opts: {
         },
       });
 
-      return databaseConnection;
+      const res = await prisma.databaseConnection.findUnique({
+        where: {
+          id: databaseConnection.id,
+        },
+        include: databaseConnectionWithConnectionDetails,
+      });
+
+      return res;
     });
 
     return [null, data];
+  } catch (error) {
+    return [error instanceof Error ? error : new Error(String(error)), null];
+  }
+};
+
+// DAL Function for deleting a new database connection
+export const deleteConnection = async (
+  id: string
+): DataAccessResponse<boolean> => {
+  try {
+    await prisma.databaseConnection.delete({
+      where: {
+        id: id,
+      },
+    });
+
+    return [null, true];
   } catch (error) {
     return [error instanceof Error ? error : new Error(String(error)), null];
   }

@@ -16,7 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DatabaseConnectionWithConnectionDetails } from "@/data-access/connection";
+import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import Editor from "@monaco-editor/react";
 import { AlertCircleIcon } from "lucide-react";

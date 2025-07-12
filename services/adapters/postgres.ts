@@ -5,7 +5,8 @@ import {
   DbTransactionClient,
   NeoSqlError,
 } from "@/services/types";
-import { Pool, PoolClient, PoolConfig, DatabaseError } from "pg";
+import { Pool, PoolClient, PoolConfig, DatabaseError, QueryResult } from "pg";
+import { AST, Parser, Select } from "node-sql-parser/build/postgresql";
 
 class PostgresTransactionClient implements DbTransactionClient {
   constructor(private client: PoolClient) {}
@@ -29,6 +30,7 @@ class PostgresTransactionClient implements DbTransactionClient {
 export class PostgresAdapter implements NeoAdapter {
   private pool: Pool;
   private config: DatabaseConnectionConfig;
+  private parser: Parser;
 
   constructor(config: DatabaseConnectionConfig) {
     if (!config.connectionOptions) {
@@ -37,6 +39,7 @@ export class PostgresAdapter implements NeoAdapter {
       );
     }
     this.config = config;
+    this.parser = new Parser();
 
     const connectionOptions: PoolConfig = {
       ...(config.connectionOptions.connectionString
@@ -69,6 +72,18 @@ export class PostgresAdapter implements NeoAdapter {
     const client = await this.pool.connect(); // Get a client from the pool
     try {
       const res = await client.query(sql, params);
+
+      if (Array.isArray(res)) {
+        const SelectArr = res.filter((resObject: QueryResult) => {
+          if (resObject.command === "SELECT") {
+            return resObject;
+          }
+        });
+        return {
+          fields: SelectArr[SelectArr.length - 1].fields,
+          rows: SelectArr[SelectArr.length - 1].rows,
+        };
+      }
       return {
         fields: res.fields,
         rows: res.rows,
@@ -172,6 +187,65 @@ export class PostgresAdapter implements NeoAdapter {
       throw this._error(error as DatabaseError);
     } finally {
       client.release(); // Release the client back to the pool
+    }
+  }
+
+  interceptQuery(sql: string): { select: Array<string>; other: Array<string> } {
+    try {
+      function modifySelectStatement(ast: Select, parser: Parser): string {
+        try {
+          const limit = ast.limit;
+
+          if (limit?.value.length == 0) {
+            ast.limit = {
+              seperator: "LIMIT",
+              value: [
+                {
+                  type: "number",
+                  value: 1000,
+                },
+              ],
+            };
+          }
+          const rawSql = parser.sqlify(ast);
+          return rawSql;
+        } catch (error) {
+          throw error;
+        }
+      }
+
+      const parsed: AST | AST[] = this.parser.astify(sql);
+
+      const selectQueries = [];
+      const otherQueries = [];
+
+      if (Array.isArray(parsed)) {
+        parsed.forEach((parse) => {
+          if (parse.type === "select") {
+            const _parsed = modifySelectStatement(parse, this.parser);
+            selectQueries.push(_parsed);
+          }
+
+          otherQueries.push(this.parser.sqlify(parse));
+        });
+      } else {
+        if (parsed.type === "select") {
+          selectQueries.push(
+            modifySelectStatement(parsed as unknown as Select, this.parser)
+          );
+        } else {
+          otherQueries.push(sql);
+        }
+      }
+
+      return {
+        select: selectQueries,
+        other: otherQueries,
+      };
+    } catch (error) {
+      throw this._error(
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 

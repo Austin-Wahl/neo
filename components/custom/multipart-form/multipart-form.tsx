@@ -38,7 +38,6 @@ function MultipartForm<T extends Record<string, unknown>>({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         {React.Children.map(children, (formSection, index) => {
-          console.log(activeFormIndex);
           return (
             <_FormSection
               index={index}

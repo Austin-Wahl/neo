@@ -14,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { DatabaseConnectionWithConnectionDetails } from "@/data-access/connection";
+import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useSqlEditor from "@/hooks/use-sql-editor";
 import { Project } from "@/prisma/generated/prisma";
 import { Plug, X } from "lucide-react";
@@ -29,7 +29,7 @@ const Navbar = ({
 }: {
   projects: Array<Project>;
   connections: Array<DatabaseConnectionWithConnectionDetails>;
-  connectionId: string;
+  connectionId?: string;
   id: string;
 }) => {
   const { database, setDatabase } = useSqlEditor();
@@ -100,15 +100,21 @@ const Navbar = ({
           onValueChange={handleConnectionChange}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Connection" />
+            <SelectValue
+              placeholder={
+                connections.length > 0 ? "Connection" : "No Connections"
+              }
+            />
           </SelectTrigger>
-          <SelectContent>
-            {connections?.map((connection) => (
-              <SelectItem value={connection.id} key={connection.id}>
-                {connection.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
+          {connections.length > 0 && (
+            <SelectContent>
+              {connections.map((connection) => (
+                <SelectItem value={connection.id} key={connection.id}>
+                  {connection.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          )}
         </Select>
       </div>
     </div>

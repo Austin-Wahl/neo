@@ -1,16 +1,12 @@
 import { APIResponse } from "@/app/(neo)/types/types";
 import {
-  createConnection,
-  DatabaseConnectionWithConnectionDetails,
+  deleteConnection,
+  getConnection,
 } from "@/data-access/database-connection";
-import { getProject } from "@/data-access/project";
-import { DatabaseTypes } from "@/prisma/generated/prisma";
 import NeoConnection from "@/services/connection-service";
 import getServerSideSession from "@/utils/getServerSideSession";
-import { createDatabaseConnectionSchema } from "@/validation-schemas/connection";
 import { NextRequest, NextResponse } from "next/server";
 import { validate } from "uuid";
-import z from "zod";
 
 interface ProjectConnectionRouteProps {
   params: Promise<{
@@ -18,7 +14,7 @@ interface ProjectConnectionRouteProps {
   }>;
 }
 
-export const POST = async (
+export const DELETE = async (
   request: NextRequest,
   { params }: ProjectConnectionRouteProps
 ) => {
@@ -41,26 +37,24 @@ export const POST = async (
     if (!validate(id)) {
       return NextResponse.json(
         {
-          message: "Malformed Project ID",
+          message: "Malformed Connection ID",
           error: "Project ID is not a valid UUID",
         } as APIResponse,
         { status: 400 }
       );
     }
 
-    // Get the body and validate it
-    const body: z.infer<typeof createDatabaseConnectionSchema> =
-      await request.json();
-    const validation = createDatabaseConnectionSchema.safeParse(body);
-
     // Find the project
-    const [projectError, project] = await getProject({ where: { id: id } });
+    const [projectError, connection] = await getConnection({
+      where: { id: id },
+      include: { project: { select: { ownerId: true } } },
+    });
     if (projectError) throw projectError;
 
-    if (!project) {
+    if (!connection) {
       return NextResponse.json(
         {
-          message: "This project does not exist.",
+          message: "This connection does not exist.",
           error: "A project with the provided UUID could not be found.",
         } as APIResponse,
         { status: 404 }
@@ -68,34 +62,30 @@ export const POST = async (
     }
 
     // Make sure the user has access to the project
-    if (project.ownerId !== session.user.id) {
+    if (connection.ownerId !== session.user.id) {
       return NextResponse.json(
         {
-          message: "You do not have access to this project.",
+          message: "You do not have access to this connection.",
           error:
-            "You do not have access to view this project. Contact the Project Owner if you believe you should.",
+            "You do not have access to view this connection. Contact the Project Owner if you believe you should.",
         } as APIResponse,
         { status: 403 }
       );
     }
 
-    if (!validation.success) {
-      return NextResponse.json(
-        {
-          message: "Your request is malformed.",
-          error: "Request body did not pass validation.",
-          zodValidationDetails: validation.error?.flatten(),
-        } as APIResponse,
-        { status: 400 }
-      );
-    }
-
     // Attempt to estabish a connectiwith tthe database
     const neo = new NeoConnection();
-    await neo.init(body);
+    await neo.init({
+      databaseProvider: connection.databaseType,
+      hostname: connection.connection!.hostname,
+      password: connection.connection!.password ?? "",
+      port: connection.connection!.port,
+      ssl: connection.connection!.ssl,
+      username: connection.connection!.username,
+    });
 
-    const connection = neo.getConnection();
-    const connectedToServiceProvider = await connection.testConnection();
+    const neoConnection = neo.getConnection();
+    const connectedToServiceProvider = await neoConnection.testConnection();
 
     if (!connectedToServiceProvider) {
       return NextResponse.json(
@@ -108,36 +98,21 @@ export const POST = async (
       );
     }
 
-    const [connectionError, connectionRecord] = await createConnection({
-      databaseConnection: {
-        name: body.name,
-        databaseType: body.databaseProvider as DatabaseTypes,
-        projectId: id,
-        description: body.description,
-        ownerId: session.user.id,
-      },
-      connection: {
-        hostname: body.hostname,
-        password: body.password,
-        port: body.port,
-        ssl: body.ssl,
-        username: body.username,
-      },
-    });
+    const [connectionError, deleted] = await deleteConnection(connection.id);
     if (connectionError) throw connectionError;
 
     return NextResponse.json(
       {
-        message: "Connection Created",
-        data: connectionRecord,
-      } as APIResponse<DatabaseConnectionWithConnectionDetails>,
+        message: "Connection Deleted",
+        data: deleted,
+      } as APIResponse<boolean>,
       { status: 201 }
     );
   } catch (error) {
     console.log(error);
     return NextResponse.json(
       {
-        message: "There was an internal error. Your connection was not created",
+        message: "There was an internal error. Your connection was not deleted",
         error:
           "There was an issue establishing a connection. This is a issue with NEO and not with the DB Service Provider.",
       } as APIResponse,

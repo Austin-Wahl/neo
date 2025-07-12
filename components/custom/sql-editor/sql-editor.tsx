@@ -2,7 +2,7 @@
 import { APIResponse } from "@/app/(neo)/types/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { DatabaseConnectionWithConnectionDetails } from "@/data-access/connection";
+import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useSqlEditor from "@/hooks/use-sql-editor";
 import { NeoSqlError } from "@/services/types";
 import { executeSqlSchema } from "@/validation-schemas/connection";

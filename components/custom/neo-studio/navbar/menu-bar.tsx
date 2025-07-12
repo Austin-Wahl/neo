@@ -12,7 +12,7 @@ import {
   Menubar as ShadMenubar,
 } from "@/components/ui/menubar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DatabaseConnectionWithConnectionDetails } from "@/data-access/connection";
+import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useDataGrid from "@/hooks/use-datagrid";
 import { Project } from "@/prisma/generated/prisma";
 import {
@@ -36,7 +36,7 @@ const Menubar = ({
 }: {
   projects: Array<Project>;
   connections: Array<DatabaseConnectionWithConnectionDetails>;
-  connectionId: string;
+  connectionId?: string;
   id: string;
 }) => {
   const { fullScreen, setFullScreen, isActive } = useDataGrid();
@@ -82,6 +82,9 @@ const Menubar = ({
             <MenubarSubTrigger>Current Connection</MenubarSubTrigger>
             <MenubarSubContent>
               <ScrollArea className="h-[180px] overflow-y-auto">
+                {connections.length <= 0 && (
+                  <MenubarItem>No Connections</MenubarItem>
+                )}
                 {connections.map((connection) => {
                   return (
                     <MenubarItem

@@ -1,5 +1,5 @@
 import { APIResponse } from "@/app/(neo)/types/types";
-import { getConnection } from "@/data-access/connection";
+import { getConnection } from "@/data-access/database-connection";
 import NeoConnection from "@/services/connection-service";
 import getServerSideSession from "@/utils/getServerSideSession";
 import { NextRequest, NextResponse } from "next/server";

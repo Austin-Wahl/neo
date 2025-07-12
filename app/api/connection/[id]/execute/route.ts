@@ -1,5 +1,5 @@
 import { APIResponse } from "@/app/(neo)/types/types";
-import { getConnection } from "@/data-access/connection";
+import { getConnection } from "@/data-access/database-connection";
 import NeoConnection from "@/services/connection-service";
 import { NeoSqlError } from "@/services/types";
 import getServerSideSession from "@/utils/getServerSideSession";
@@ -103,7 +103,13 @@ export const POST = async (
     }
 
     try {
-      const results = await connectionInstance.query(body.sql);
+      // Intercept and parse queries
+      const { other, select } = connectionInstance.interceptQuery(body.sql);
+
+      // Rebuild query
+      const rebuilt = other.join(";") + ";" + select.join(";");
+
+      const results = await connectionInstance.query(rebuilt);
 
       return NextResponse.json(
         {

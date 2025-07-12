@@ -4,14 +4,21 @@ import { APIResponse } from "@/app/(neo)/types/types";
 import DataGrid from "@/components/custom/data-grid/data-grid";
 import SQLEditor from "@/components/custom/sql-editor/sql-editor";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { DatabaseConnectionWithConnectionDetails } from "@/data-access/connection";
+import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useDataGrid from "@/hooks/use-datagrid";
 import { useEffect, useState } from "react";
-import { PuffLoader } from "react-spinners";
+import { PulseLoader } from "react-spinners";
 
 const Studio = ({
   connection,
@@ -67,22 +74,42 @@ const Studio = ({
         className="pl-4 min-w-[400px] overflow-scroll"
       >
         {data?.data && requestState === "loaded" ? (
-          <DataGrid
-            fields={data.data!.result.fields}
-            rows={data.data!.result.rows}
-            fullScreen={fullScreen}
-          />
+          !data.data.result.fields ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Query Executed</CardTitle>
+                <CardDescription>
+                  Your query executed but the response from the database did not
+                  return results that could be rendered.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>
+                  Common reasons are more than one <strong>SELECT</strong>{" "}
+                  statement.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <DataGrid
+              fields={data.data.result.fields || []}
+              rows={data.data.result.rows || []}
+              fullScreen={fullScreen}
+            />
+          )
         ) : (
           <div className="w-full h-full flex items-center justify-center select-none">
             {requestState === "loading" ? (
-              <PuffLoader size={16} color="white" />
+              <PulseLoader size={16} color="var(--foreground)" />
             ) : (
-              <div className="flex flex-col items-center justify-center gap-2">
-                <p className="text-5xl font-thin text-center">Studio</p>
-                <p className="text-sm text-muted-foreground text-center">
-                  By NEO
-                </p>
-              </div>
+              <Card className="w-[400px]">
+                <CardHeader>
+                  <CardTitle>Data Grid</CardTitle>
+                  <CardDescription>
+                    Run a query to view your results in the Data Grid!
+                  </CardDescription>
+                </CardHeader>
+              </Card>
             )}
           </div>
         )}

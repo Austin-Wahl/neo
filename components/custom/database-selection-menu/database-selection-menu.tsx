@@ -26,7 +26,7 @@ const DatabaseSelectionMenu = ({
       }
     >
       <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Database" />
+        <SelectValue placeholder="Connection" />
       </SelectTrigger>
       <SelectContent>
         {project.DatabaseConnection.map((databaseConnection) => {

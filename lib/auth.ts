@@ -15,4 +15,5 @@ export const auth = betterAuth({
       clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
     },
   },
+  trustedOrigins: ["http://172.16.42.26:3000"],
 });

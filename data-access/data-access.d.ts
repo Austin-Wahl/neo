@@ -1,2 +1,3 @@
-export type DataAccessResponse<T extends (object | number) | object[] | null> =
-  Promise<[error: Error | null, result: T | null]>;
+export type DataAccessResponse<
+  T extends (object | number | boolean) | object[] | null
+> = Promise<[error: Error | null, result: T | null]>;

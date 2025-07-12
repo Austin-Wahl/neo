@@ -1,8 +1,13 @@
 import CreateConnection from "@/components/custom/create-connection/create-connection";
 import DBConnectionsGrid from "@/components/custom/db-connections-grid/db-connections-grid";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { countConnections, getConnections } from "@/data-access/connection";
+import {
+  countConnections,
+  getConnections,
+} from "@/data-access/database-connection";
 import { AlertCircle } from "lucide-react";
+import { Suspense } from "react";
+import { PuffLoader } from "react-spinners";
 
 interface PageProps {
   params: Promise<{
@@ -12,15 +17,29 @@ interface PageProps {
 
 const ProjectPage = async ({ params }: PageProps) => {
   const { id } = await params;
+
+  return (
+    <Suspense fallback={<PuffLoader color="var(--foreground)" />}>
+      <Connections id={id} />
+    </Suspense>
+  );
+};
+
+const Connections = async ({ id }: { id: string }) => {
   const [connectionsError, connections] = await getConnections({
     where: {
       projectId: id,
     },
+    orderBy: {
+      createdAt: "asc",
+    },
     take: 20,
   });
+  console.log(connections);
   const [countError, totalConnections] = await countConnections({
     projectId: id,
   });
+
   return (
     <div className="flex flex-col gap-4 container p-4">
       <CreateConnection projectId={id} />
@@ -37,6 +56,7 @@ const ProjectPage = async ({ params }: PageProps) => {
           <DBConnectionsGrid
             connections={connections!}
             totalRecords={totalConnections as number}
+            projectId={id}
           />
         )}
       </div>

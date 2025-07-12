@@ -10,8 +10,10 @@ import {
 } from "@/components/ui/card";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,15 +21,22 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { DatabaseConnectionWithConnectionDetails } from "@/data-access/connection";
+import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
+import useDeleteDatabaseConnection from "@/hooks/use-delete-database-connection";
 import useTestConnection from "@/hooks/use-test-connection";
 import { DatabaseTypes } from "@/prisma/generated/prisma";
 import { Edit, Ellipsis, Eye, Grid, Plug, Settings, Trash } from "lucide-react";
 import Link from "next/link";
-import React, { ButtonHTMLAttributes, useEffect, useState } from "react";
+import React, {
+  ButtonHTMLAttributes,
+  ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import { PuffLoader } from "react-spinners";
 
 const DBConnection = ({
@@ -37,6 +46,7 @@ const DBConnection = ({
 }) => {
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [rawSqlEditorOpen, setRawSqlEditorOpen] = useState(false);
+  const [deleteOpen, setDeleteClose] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   function getDatabaseLogo(databaseProvider: DatabaseTypes): string {
@@ -46,6 +56,27 @@ const DBConnection = ({
       case "Postgres":
         return "🐘";
     }
+  }
+
+  // Stuff for remove item
+  const { mutateAsync, status } = useDeleteDatabaseConnection(
+    connection.projectId
+  );
+  async function deleteConnection() {
+    try {
+      await mutateAsync({ connectionId: connection.id });
+      setIsDropdownOpen(false);
+    } catch (error) {
+      console.log(error);
+      setIsDropdownOpen(true);
+    }
+  }
+
+  let removeIcon = <Trash />;
+  if (status === "error" || status === "idle") {
+    removeIcon = <Trash />;
+  } else if (status !== "success") {
+    removeIcon = <PuffLoader color="var(--destructive)" size={16} />;
   }
 
   // State controllers
@@ -70,6 +101,13 @@ const DBConnection = ({
     if (!open) {
       setIsDropdownOpen(false);
     }
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteClose(true);
+  };
+  const handleDeleteClose = () => {
+    setDeleteClose((prev) => !prev);
   };
 
   return (
@@ -118,10 +156,6 @@ const DBConnection = ({
               <Settings />
               Configure
             </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive">
-              <Trash />
-              Remove
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleRawSqlEditorClick}>
               <Edit />
               Raw SQL Editor
@@ -134,6 +168,11 @@ const DBConnection = ({
                 Open Studio
               </DropdownMenuItem>
             </Link>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={handleDeleteClick}>
+              {removeIcon}
+              Remove
+            </DropdownMenuItem>
           </DropdownMenuContent>
           {viewDetailsOpen && (
             <DatabaseConnectionDetails
@@ -149,9 +188,59 @@ const DBConnection = ({
               connection={connection}
             />
           )}
+          {deleteOpen && (
+            <DeleteConnectionDialog
+              onOpenChange={handleDeleteClose}
+              open={deleteOpen}
+              icon={removeIcon}
+              deleteConnection={deleteConnection}
+              status={status}
+            />
+          )}
         </DropdownMenu>
       </div>
     </div>
+  );
+};
+
+const DeleteConnectionDialog = ({
+  open,
+  onOpenChange,
+  deleteConnection,
+  status,
+  icon,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  deleteConnection: () => Promise<void>;
+  status: "idle" | "success" | "error" | "pending";
+  icon: ReactNode;
+}) => {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Are you sure?</DialogTitle>
+          <DialogDescription>
+            Clicking delete removes this connection from your Neo Project. It{" "}
+            <strong>DOES NOT</strong> delete your database.
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Close</Button>
+          </DialogClose>{" "}
+          <Button
+            variant="destructive"
+            disabled={status === "pending"}
+            onClick={deleteConnection}
+          >
+            {icon}Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

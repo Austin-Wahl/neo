@@ -1,5 +1,5 @@
 import { APIResponse } from "@/app/(neo)/types/types";
-import { Connection } from "@/prisma/generated/prisma";
+import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import { createProjectSchema } from "@/validation-schemas/project";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ const useCreateDatabaseConnection = (projectId: string) => {
   const queryClient = useQueryClient();
 
   const mutate = useMutation<
-    APIResponse<Connection>,
+    APIResponse<DatabaseConnectionWithConnectionDetails>,
     Error,
     CreateDatabaseConnectionFormProps
   >({
@@ -23,14 +23,15 @@ const useCreateDatabaseConnection = (projectId: string) => {
         body: JSON.stringify(data),
       });
 
-      const body: APIResponse<Connection> = await response.json();
+      const body: APIResponse<DatabaseConnectionWithConnectionDetails> =
+        await response.json();
       if (!response.ok) throw body;
 
       return body;
     },
-    mutationKey: ["project", projectId, "connections"],
+    mutationKey: ["project", "connections", projectId],
     onSuccess: ({ data }) => {
-      toast("Project Created", {
+      toast("Connection Created", {
         description:
           "Your connection has been created! If you don't see it, refresh.",
         dismissible: true,
@@ -46,12 +47,14 @@ const useCreateDatabaseConnection = (projectId: string) => {
     },
   });
 
-  function addNewConnectionToQueryClient(newProject: Connection) {
+  function addNewConnectionToQueryClient(
+    newProject: DatabaseConnectionWithConnectionDetails
+  ) {
     queryClient.setQueryData(
-      ["project", projectId, "connections"],
+      ["project", "connections", projectId],
       (oldData: {
         pageParams: Array<number>;
-        pages: Array<APIResponse<Connection[]>>;
+        pages: Array<APIResponse<DatabaseConnectionWithConnectionDetails[]>>;
       }) => {
         if (!oldData) return oldData;
 

@@ -1,11 +1,7 @@
-import { PuffLoader } from "react-spinners";
+import SplashScreen from "@/components/custom/neo-studio/splash-screen/splash-screen";
 
 const ConnectionWindowLoadingPage = () => {
-  return (
-    <div className="w-full h-full flex items-center justify-center">
-      <PuffLoader size={16} color="white" />
-    </div>
-  );
+  return <SplashScreen />;
 };
 
 export default ConnectionWindowLoadingPage;

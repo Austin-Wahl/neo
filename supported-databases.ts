@@ -1,3 +1,5 @@
+import { DatabaseTypes } from "@/prisma/generated/prisma";
+
 export type ExploreType = "DATABASE/TABLES" | "DATABASE/SCHEMA/TABLES";
 
 export enum QuoteTypes {
@@ -11,12 +13,12 @@ export interface SupportedDatabaseProps {
   identifierQuote: QuoteTypes;
 }
 
-const SupportedDatabase: Record<string, SupportedDatabaseProps> = {
-  POSTGRES: {
+const SupportedDatabase: Record<DatabaseTypes, SupportedDatabaseProps> = {
+  Postgres: {
     exploreType: "DATABASE/SCHEMA/TABLES",
     identifierQuote: QuoteTypes.DOUBLE,
   },
-  MYSQL: {
+  MySQL: {
     exploreType: "DATABASE/TABLES",
     identifierQuote: QuoteTypes.BACKTICK,
   },

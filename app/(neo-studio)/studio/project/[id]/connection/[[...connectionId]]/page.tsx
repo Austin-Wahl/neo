@@ -1,4 +1,3 @@
-import DatabaseSelectionMenu from "@/components/custom/database-selection-menu/database-selection-menu";
 import Studio from "@/components/custom/neo-studio/STUDIO/studio";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -8,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getConnection } from "@/data-access/connection";
+import { getConnection } from "@/data-access/database-connection";
 import { getProject } from "@/data-access/project";
 import { Project } from "@/prisma/generated/prisma";
 import { AlertCircle } from "lucide-react";
@@ -80,9 +79,7 @@ const ConnectionWindowPage = async ({ params }: PageProps) => {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            To use Studio, please select a database connection from the menu
-            above, or, use the dropdown below.
-            <DatabaseSelectionMenu project={project} defaultValue="" />
+            To use Studio, please select a database connection.
           </CardContent>
         </Card>
       </div>

@@ -56,15 +56,59 @@ import {
 import { ReactNode, useState } from "react";
 
 type SidebarProps = React.ComponentProps<typeof ShadSidebar> & {
+  connectionId?: string;
+} & Partial<SupportedDatabaseProps>;
+
+type SidebarProps_DBConnected = React.ComponentProps<typeof ShadSidebar> & {
   connectionId: string;
 } & SupportedDatabaseProps;
 
-const Sidebar = ({
+const Sidebar = (props: SidebarProps) => {
+  const { open } = useSidebar();
+
+  if (!props.connectionId) {
+    return (
+      <ShadSidebar variant="floating" {...props} collapsible="icon">
+        <SidebarRail />
+        <SidebarHeader>
+          <div
+            className={`flex items-center ${
+              open
+                ? "flex-row justify-between p-2 bg-secondary rounded-md"
+                : "flex-col-reverse justify-center border-b pb-2 gap-2"
+            }`}
+          >
+            <SidebarTrigger>
+              <Split />
+            </SidebarTrigger>
+          </div>
+        </SidebarHeader>
+        <SidebarContent>
+          {open && (
+            <div className="p-2">
+              <Alert variant="default">
+                <AlertCircleIcon className="mr-2" />
+                <AlertTitle>No Connection</AlertTitle>
+                <AlertDescription>
+                  To use studio, please choose a connection.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+        </SidebarContent>
+      </ShadSidebar>
+    );
+  }
+
+  return <Sidebar_DBConnected {...(props as SidebarProps_DBConnected)} />;
+};
+
+const Sidebar_DBConnected = ({
   connectionId,
   exploreType,
   identifierQuote,
   ...props
-}: SidebarProps) => {
+}: SidebarProps_DBConnected) => {
   const [error, setError] = useState("");
   const { open } = useSidebar();
   const { data, status, refetch, isRefetching } = useQuery<

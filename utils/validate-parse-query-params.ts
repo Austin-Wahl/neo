@@ -6,7 +6,7 @@ type Props<T extends z.AnyZodObject> = {
   url: string;
 };
 /**
- * Helper function which takes a url and will run validation against query params. Stips out all invalid params.
+ * Helper function which takes a url and will run validation against query params. Strips out all invalid params.
  * @param {Props} props Schema and URL to validate and parse query params for
  * @returns {Record<string | number | symbol, unknown>} Object with valid query params only
  */

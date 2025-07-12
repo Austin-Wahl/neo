@@ -57,6 +57,7 @@ function useSidebar() {
 
 function SidebarProvider({
   defaultOpen = true,
+  defaultWidth = SIDEBAR_WIDTH,
   open: openProp,
   onOpenChange: setOpenProp,
   className,
@@ -65,6 +66,7 @@ function SidebarProvider({
   ...props
 }: React.ComponentProps<"div"> & {
   defaultOpen?: boolean;
+  defaultWidth?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -90,7 +92,7 @@ function SidebarProvider({
     [setOpenProp, open]
   );
 
-  const [_widthState, _setWidthState] = React.useState(SIDEBAR_WIDTH);
+  const [_widthState, _setWidthState] = React.useState(defaultWidth);
   const width = _widthState;
   const setWidthState = React.useCallback(
     (value: string | ((value: string) => string)) => {

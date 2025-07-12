@@ -182,6 +182,7 @@ export const ColumnResizer = <TData, TValue>({
       {...{
         onMouseDown: header.getResizeHandler(),
         onTouchStart: header.getResizeHandler(),
+        onDoubleClick: () => console.log(header.getSize()),
         className: `absolute top-0 right-0 cursor-col-resize w-1 h-full bg-gray-300 hover:bg-gray-500`,
         style: {
           userSelect: "none",

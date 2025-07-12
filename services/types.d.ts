@@ -41,6 +41,13 @@ export interface NeoAdapter {
 
   // Retrieves a list of tables within the database schema
   showTables(schema: string): Promise<Array<string>>;
+
+  // Parses query to place artifical limits on SELECT statements. Used for improving performance on the client side.
+  interceptQuery(schema: string): {
+    select: Array<string>;
+    other: Array<string>;
+  };
+
   /**
    * Converts error message from databases into a Neo compatible error format.
    * Do not throw errors directly, call this method to adapt errors.

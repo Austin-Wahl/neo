@@ -2,6 +2,7 @@
 import MultipartForm, {
   FormSection,
 } from "@/components/custom/multipart-form/multipart-form";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -52,6 +53,7 @@ import {
 } from "@/validation-schemas/connection";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  AlertCircleIcon,
   Building,
   CurlyBraces,
   Database,
@@ -77,12 +79,14 @@ interface CreateConnectionProps {
   trigger?: ReactNode;
   asChild?: boolean;
   sections: Record<keyof CreateConnectionSchemaProps, number>;
+  error: string;
 }
 
 interface CreateConnectionFormProps {
   sections: Record<keyof CreateConnectionSchemaProps, number>;
   form: UseFormReturn<CreateConnectionSchemaProps>;
   handleSubmit: SubmitHandler<CreateConnectionSchemaProps>;
+  error: string;
 }
 
 const CreateConnection = ({
@@ -95,6 +99,7 @@ const CreateConnection = ({
   projectId: string;
 }) => {
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState("");
   const isMobile = useIsMobile();
   const { mutateAsync } = useCreateDatabaseConnection(projectId);
 
@@ -126,10 +131,14 @@ const CreateConnection = ({
 
   async function handleSubmit(data: CreateConnectionSchemaProps) {
     try {
-      console.log("clicked");
+      setError("");
       await mutateAsync(data);
     } catch (error) {
-      console.log(error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "An unknown error occured. Failed to add connection."
+      );
     }
   }
 
@@ -143,6 +152,7 @@ const CreateConnection = ({
         trigger={trigger}
         asChild={asChild}
         sections={sections}
+        error={error}
       />
     );
   }
@@ -156,6 +166,7 @@ const CreateConnection = ({
       trigger={trigger}
       asChild={asChild}
       sections={sections}
+      error={error}
     />
   );
 };
@@ -171,6 +182,7 @@ const CreateConnectionCardTrigger = () => {
 
 const CreateConnectionForm = ({
   form,
+  error,
   handleSubmit,
   sections,
 }: CreateConnectionFormProps) => {
@@ -447,6 +459,15 @@ const CreateConnectionForm = ({
             </div>
           </CardContent>
         </Card>
+        <div className="mt-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircleIcon />
+              <AlertTitle>Failed to add connection!</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
       </FormSection>
     </MultipartForm>
   );
@@ -459,6 +480,7 @@ const DesktopForm = ({
   handleSubmit,
   asChild,
   sections,
+  error,
 }: CreateConnectionProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -476,6 +498,7 @@ const DesktopForm = ({
           form={form}
           handleSubmit={handleSubmit}
           sections={sections}
+          error={error}
         />
       </DialogContent>
     </Dialog>
@@ -490,6 +513,7 @@ const MobileForm = ({
   trigger,
   asChild,
   sections,
+  error,
 }: CreateConnectionProps) => {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -508,6 +532,7 @@ const MobileForm = ({
             form={form}
             handleSubmit={handleSubmit}
             sections={sections}
+            error={error}
           />
         </div>
 
