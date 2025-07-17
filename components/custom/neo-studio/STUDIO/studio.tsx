@@ -58,7 +58,7 @@ const Studio = ({
       weight: 100,
       children: [
         {
-          type: "column",
+          type: "row",
           weight: 100,
           children: [
             {
@@ -69,6 +69,12 @@ const Studio = ({
                   type: "editor",
                   name: "Editor",
                 },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 50,
+              children: [
                 {
                   type: "editor",
                   name: "Editor",
@@ -95,7 +101,12 @@ const Studio = ({
 
     if (component === "Editor") {
       return (
-        <EditorView connection={connection} setRequestState={setRequestState} />
+        <div className="w-full h-full overflow-auto">
+          <EditorView
+            connection={connection}
+            setRequestState={setRequestState}
+          />
+        </div>
       );
     }
 
