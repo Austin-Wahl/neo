@@ -1,5 +1,7 @@
 "use client";
 
+import { APIResponse } from "@/app/(neo)/types/types";
+import { NeoRow } from "@/services/types";
 import {
   createContext,
   Dispatch,
@@ -8,8 +10,17 @@ import {
   useEffect,
   useState,
 } from "react";
+import { Column } from "react-data-grid";
 
+type D = APIResponse<{
+  result: {
+    fields: Column<NeoRow>[];
+    rows: NeoRow[];
+  };
+}> | null;
 interface GridContextProps {
+  data: D;
+  setData: Dispatch<SetStateAction<D>>;
   fullScreen: boolean;
   setFullScreen: Dispatch<SetStateAction<boolean>>;
   isActive: boolean;
@@ -17,6 +28,8 @@ interface GridContextProps {
 }
 
 export const GridContext = createContext<GridContextProps>({
+  data: null,
+  setData: () => {},
   fullScreen: false,
   setFullScreen: () => {},
   isActive: false,
@@ -28,6 +41,7 @@ const TOGGLE_GRID_FILLSCREEN_SHORTCUT = "e";
 const GridProvider = ({ children }: { children: ReactNode }) => {
   const [fullScreen, setFullScreen] = useState(false);
   const [isActive, setIsActive] = useState(false);
+  const [data, setData] = useState<D>(null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -47,7 +61,14 @@ const GridProvider = ({ children }: { children: ReactNode }) => {
   });
   return (
     <GridContext.Provider
-      value={{ fullScreen, setFullScreen, isActive, setIsActive }}
+      value={{
+        fullScreen,
+        setFullScreen,
+        isActive,
+        setIsActive,
+        data,
+        setData,
+      }}
     >
       {children}
     </GridContext.Provider>

@@ -4,7 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useSqlEditor from "@/hooks/use-sql-editor";
-import { NeoSqlError } from "@/services/types";
+import { NeoRow, NeoSqlError } from "@/services/types";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { Editor } from "@monaco-editor/react";
 import { AlertCircle } from "lucide-react";
@@ -15,6 +15,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import { Column } from "react-data-grid";
 import { PuffLoader } from "react-spinners";
 import { toast } from "sonner";
 
@@ -31,8 +32,8 @@ const SQLEditor = ({
   setData: Dispatch<
     SetStateAction<APIResponse<{
       result: {
-        fields: Array<{ name: string }>;
-        rows: Record<string, unknown>[];
+        fields: Column<NeoRow>[];
+        rows: NeoRow[];
       };
     }> | null>
   >;

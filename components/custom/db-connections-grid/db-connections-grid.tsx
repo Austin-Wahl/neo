@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import calculatePagination from "@/utils/calculate-pagination";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, SquareMinus } from "lucide-react";
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { PulseLoader } from "react-spinners";
@@ -71,6 +71,16 @@ const DBConnectionsGrid = ({
     }
 
     return body;
+  }
+
+  if (totalRecords < 1) {
+    return (
+      <Alert>
+        <SquareMinus />
+        <AlertTitle>No Connections</AlertTitle>
+        <AlertDescription>Get started by adding a connection!</AlertDescription>
+      </Alert>
+    );
   }
 
   return (

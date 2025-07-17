@@ -42,6 +42,7 @@ type SidebarContextProps = {
   isMobile: boolean;
   toggleSidebar: () => void;
   setWidth: (width: string) => void;
+  overrideSheet: boolean;
 };
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
@@ -63,12 +64,14 @@ function SidebarProvider({
   className,
   style,
   children,
+  overrideSheet = false,
   ...props
 }: React.ComponentProps<"div"> & {
   defaultOpen?: boolean;
   defaultWidth?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  overrideSheet?: boolean;
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
@@ -110,7 +113,9 @@ function SidebarProvider({
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
+    return isMobile && !overrideSheet
+      ? setOpenMobile((open) => !open)
+      : setOpen((open) => !open);
   }, [isMobile, setOpen, setOpenMobile]);
 
   // Adds a keyboard shortcut to toggle the sidebar.
@@ -144,6 +149,7 @@ function SidebarProvider({
       toggleSidebar,
       width,
       setWidth: setWidthState,
+      overrideSheet,
     }),
     [
       state,
@@ -155,6 +161,7 @@ function SidebarProvider({
       toggleSidebar,
       width,
       setWidthState,
+      overrideSheet,
     ]
   );
 
@@ -171,7 +178,7 @@ function SidebarProvider({
             } as React.CSSProperties
           }
           className={cn(
-            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
+            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex  w-full",
             className
           )}
           {...props}
@@ -195,7 +202,8 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, overrideSheet } =
+    useSidebar();
 
   if (collapsible === "none") {
     return (
@@ -212,7 +220,7 @@ function Sidebar({
     );
   }
 
-  if (isMobile) {
+  if (isMobile && !overrideSheet) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
@@ -239,7 +247,9 @@ function Sidebar({
 
   return (
     <div
-      className="group peer text-sidebar-foreground hidden md:block"
+      className={`group peer text-sidebar-foreground ${
+        overrideSheet ? "block" : "hidden md:block"
+      }`}
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
@@ -261,7 +271,8 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex top-[70]",
+          "fixed inset-y-0 z-10  h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex top-[70]",
+          overrideSheet ? "block" : "hidden",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",

@@ -68,7 +68,7 @@ const Sidebar = (props: SidebarProps) => {
 
   if (!props.connectionId) {
     return (
-      <ShadSidebar variant="floating" {...props} collapsible="icon">
+      <ShadSidebar variant="sidebar" {...props} collapsible="icon">
         <SidebarRail />
         <SidebarHeader>
           <div
@@ -148,14 +148,14 @@ const Sidebar_DBConnected = ({
   }
 
   return (
-    <ShadSidebar variant="floating" {...props} collapsible="icon">
+    <ShadSidebar variant="sidebar" {...props} collapsible="icon">
       <SidebarRail />
-      <SidebarHeader>
+      <SidebarHeader className="!bg-background border-b">
         <div
           className={`flex items-center ${
             open
-              ? "flex-row justify-between p-2 bg-secondary rounded-md"
-              : "flex-col-reverse justify-center border-b pb-2 gap-2"
+              ? "flex-row justify-between bg-background rounded-md"
+              : "flex-col-reverse justify-center  pb-2 gap-2"
           }`}
         >
           <div>
@@ -182,7 +182,7 @@ const Sidebar_DBConnected = ({
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="!bg-background">
         {status === "error" && (
           <div className="p-2">
             <Alert variant="destructive">
@@ -249,8 +249,6 @@ const Sidebar_DBConnected = ({
               </SidebarMenuItem>
             )}
         </SidebarGroup>
-
-        <SidebarGroup />
       </SidebarContent>
     </ShadSidebar>
   );

@@ -1,14 +1,13 @@
 import AccessDenied from "@/components/custom/access-denied/access-denied";
-import ProjectTab from "@/components/custom/project-tabs/project-tab";
-import ProjectTabs from "@/components/custom/project-tabs/project-tabs";
+import ProjectHeaderButton from "@/components/custom/project-header-button/project-header-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
 import { getProject } from "@/data-access/project";
 import getServerSideSession from "@/utils/getServerSideSession";
-import { AlertCircle, House, Settings, Users } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
+import { PuffLoader } from "react-spinners";
 import { validate } from "uuid";
 
 interface LayoutProps {
@@ -55,47 +54,36 @@ const ProjectLayout = async (props: LayoutProps) => {
   if (!hasAccess) {
     return <AccessDenied />;
   }
+
   return (
-    <div className="h-full overflow-hidden">
-      <div className="w-full bg-secondary/30 p-4 pb-0 flex flex-col gap-4">
-        <div className="flex gap-4 items-center">
-          <Avatar className="w-[60px] h-[60px]">
-            <AvatarFallback className="rounded-lg">
-              <Skeleton className="w-[60px] h-[60px]" />
+    <div className="px-4 container ml-auto mr-auto pt-4">
+      {/* Header */}
+      <div className="w-full bg-gradient-to-r from-card to-background p-4 rounded-lg border flex items-center justify-between gap-4">
+        <div className="flex gap-3 items-center">
+          <Avatar className="w-[60px] h-[60px] flex !rounded-lg !overflow-hidden">
+            <AvatarFallback className="rounded-none">
+              <PuffLoader size={16} color="var(--foreground)" />
             </AvatarFallback>
-            <AvatarImage className="rounded-lg" src={project.icon} />
+            <AvatarImage
+              src={project.icon}
+              style={{ borderRadius: "8px !important" }}
+            />
           </Avatar>
-          <div>
-            <p className="text-2xl">{project.name}</p>
-            <p className="text-muted-foreground text-sm">
+          <div className="max-w-[600px]">
+            <p className="text-xl  text-ellipsis whitespace-nowrap">
+              {project.name}
+            </p>
+            <p className="text-sm text-muted-foreground overflow-hidden text-ellipsis whitespace-break-spaces">
               {project.description}
             </p>
           </div>
         </div>
         <div>
-          <ProjectTabs defaultActive="Project">
-            <ProjectTab
-              icon={<House />}
-              link={`/project/${projectId}`}
-              title="Project"
-              value="Project"
-            />
-            <ProjectTab
-              icon={<Users />}
-              link={`/project/${projectId}/access`}
-              title="Users"
-              value="Users"
-            />
-            <ProjectTab
-              icon={<Settings />}
-              link={`/project/${projectId}/settings`}
-              title="Settings"
-              value="Settings"
-            />
-          </ProjectTabs>
+          <ProjectHeaderButton id={project.id} />
         </div>
       </div>
-      <main className="h-full">{props.children}</main>
+      {/* Content */}
+      <div className="pt-4">{props.children}</div>
     </div>
   );
 };

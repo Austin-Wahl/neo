@@ -4,6 +4,7 @@ import SplashScreen from "@/components/custom/neo-studio/splash-screen/splash-sc
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import {
+  DatabaseConnectionWithConnectionDetails,
   getConnection,
   getConnections,
 } from "@/data-access/database-connection";
@@ -88,15 +89,19 @@ export default async function NoNavLayout({
       <SqlEditorProvider>
         <SidebarProvider defaultOpen={defaultOpen} defaultWidth={sidebarWidth}>
           <Suspense fallback={<SplashScreen />}>
-            <DataLoader connectionId={connectionId} id={id} session={session}>
-              <div className="w-full min-h-[calc(100vh-102px)] max-h-[calc(100%-102px)] overflow-visible gap-3 flex mt-[102px] pr-4">
+            <DataLoader
+              connection={currentConnection ?? undefined}
+              id={id}
+              session={session}
+            >
+              <div className="w-full min-h-[calc(100vh-52px)] max-h-[calc(100%-52px)] overflow-visible flex mt-[52px] bg-backdrop">
                 <Sidebar
-                  className="h-[calc(100%-102px)] top-[94px] ml-2"
+                  className="h-full top-[53px] rounded-none"
                   connectionId={connectionId}
                   exploreType={exploreType}
                   identifierQuote={identifierQuote}
                 />
-                <SidebarInset className="relative max-h-[calc(100%-16px)] overflow-hidden w-full rounded-lg">
+                <SidebarInset className="relative h-[calc(100%-8px)] overflow-hidden w-full bg-backdrop m-2">
                   <div className="absolute overflow-auto w-full h-full">
                     {children}
                   </div>
@@ -111,12 +116,12 @@ export default async function NoNavLayout({
 }
 
 const DataLoader = async ({
-  connectionId,
+  connection,
   id,
   children,
   session,
 }: {
-  connectionId?: string;
+  connection?: DatabaseConnectionWithConnectionDetails;
   id: string;
   children: ReactNode;
   session: Session;
@@ -168,10 +173,10 @@ const DataLoader = async ({
   return (
     <>
       <Navbar
-        connectionId={connectionId}
         connections={connections!}
         id={id}
         projects={projects!}
+        connection={connection ?? undefined}
       />
       {children}
     </>

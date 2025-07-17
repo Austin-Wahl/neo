@@ -11,6 +11,12 @@ import { getConnection } from "@/data-access/database-connection";
 import { getProject } from "@/data-access/project";
 import { Project } from "@/prisma/generated/prisma";
 import { AlertCircle } from "lucide-react";
+import { JSX } from "react";
+const ELEMENT_MAP: { [viewId: string]: JSX.Element } = {
+  a: <div>Left Window</div>,
+  b: <div>Top Right Window</div>,
+  c: <div>Bottom Right Window</div>,
+};
 
 interface PageProps {
   params: Promise<{
@@ -121,7 +127,7 @@ const ConnectionWindowPage = async ({ params }: PageProps) => {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full">
       <Studio connection={connection} />
       {/* <div className="w-[50px] h-[10000px]"></div> */}
     </div>

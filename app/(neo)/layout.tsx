@@ -21,10 +21,10 @@ export default async function RootLayout({
   return (
     <SidebarProvider>
       <div className="w-full h-screen min-h-[400px] relative">
-        <div className="top-0 left-0 w-full h-[72px] fixed z-[100]">
+        <div className="top-0 left-0 w-full h-[72px] fixed z-[100] ">
           <Navigation session={session} />
         </div>
-        <main className="absolute w-full top-[68px]">
+        <main className="absolute w-full top-[68px] min-h-[500px]">
           {session ? (
             <AuthenticatedUserLayout user={session.user}>
               {children}
@@ -47,7 +47,7 @@ const AuthenticatedUserLayout = ({
   children: ReactNode;
 }) => {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="!min-h-[500px]">
       <AppSidebar
         user={user}
         className="top-[70px] h-[calc(100vh-72px)] min-h-[400px] overflow-y-auto overflow-x-hidden"

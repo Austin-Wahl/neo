@@ -1,12 +1,22 @@
 // src/services/database/PostgresConnection.ts
 import {
   DatabaseConnectionConfig,
-  NeoAdapter,
   DbTransactionClient,
+  NeoAdapter,
+  NeoRow,
   NeoSqlError,
 } from "@/services/types";
-import { Pool, PoolClient, PoolConfig, DatabaseError, QueryResult } from "pg";
 import { AST, Parser, Select } from "node-sql-parser/build/postgresql";
+import {
+  DatabaseError,
+  Pool,
+  PoolClient,
+  PoolConfig,
+  QueryResult,
+  Result,
+} from "pg";
+import { Column } from "react-data-grid";
+import { v4 } from "uuid";
 
 class PostgresTransactionClient implements DbTransactionClient {
   constructor(private client: PoolClient) {}
@@ -65,28 +75,66 @@ export class PostgresAdapter implements NeoAdapter {
     });
   }
 
-  async query<T>(
+  async query(
     sql: string,
     params?: unknown[]
-  ): Promise<{ rows: T[]; fields: unknown[] }> {
+  ): Promise<{ rows: NeoRow[]; fields: Column<NeoRow>[] }> {
     const client = await this.pool.connect(); // Get a client from the pool
     try {
       const res = await client.query(sql, params);
 
+      // In the event their is more than one select statement, return the results for the last one
       if (Array.isArray(res)) {
-        const SelectArr = res.filter((resObject: QueryResult) => {
+        const SelectArr: Result[] = res.filter((resObject: QueryResult) => {
           if (resObject.command === "SELECT") {
             return resObject;
           }
         });
+
+        const dat = SelectArr[SelectArr.length - 1];
+        const fields: Column<NeoRow>[] = dat?.fields.map((field) => {
+          const name = field.name;
+          return {
+            name: name,
+            key: name,
+          };
+        });
+
+        const rows: NeoRow[] = dat?.rows.map((row) => {
+          return {
+            ...row,
+            __neo_unique_key__: row.__neo_unique_key__
+              ? row.__neo_unique_key__
+              : v4(),
+          };
+        });
+
         return {
-          fields: SelectArr[SelectArr.length - 1].fields,
-          rows: SelectArr[SelectArr.length - 1].rows,
+          fields,
+          rows,
         };
       }
+
+      const fields: Column<NeoRow>[] = res.fields.map((field) => {
+        const name = field.name;
+        return {
+          name: name,
+          key: name,
+        };
+      });
+
+      const rows: NeoRow[] = res.rows.map((row) => {
+        return {
+          ...row,
+          __neo_unique_key__: row.__neo_unique_key__
+            ? row.__neo_unique_key__
+            : v4(),
+        };
+      });
+
       return {
-        fields: res.fields,
-        rows: res.rows,
+        fields: fields,
+        rows: rows,
       };
     } catch (error) {
       throw this._error(error as DatabaseError, sql);

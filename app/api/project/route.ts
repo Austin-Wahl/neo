@@ -1,13 +1,13 @@
 import { APIResponse } from "@/app/(neo)/types/types";
 import { createProject } from "@/data-access/project";
+import { utapi } from "@/lib/uploadthing";
 import { Project } from "@/prisma/generated/prisma";
 import getServerSideSession from "@/utils/getServerSideSession";
 import { createProjectSchema } from "@/validation-schemas/project";
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { toPng } from "jdenticon";
-import { utapi } from "@/lib/uploadthing";
+import { NextRequest, NextResponse } from "next/server";
 import { v4 } from "uuid";
+import { z } from "zod";
 // Create project handler
 export const POST = async (request: NextRequest) => {
   try {

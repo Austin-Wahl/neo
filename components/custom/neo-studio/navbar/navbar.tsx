@@ -1,5 +1,6 @@
 "use client";
 
+import { APIResponse } from "@/app/(neo)/types/types";
 import Menubar from "@/components/custom/neo-studio/navbar/menu-bar";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,8 @@ import {
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useSqlEditor from "@/hooks/use-sql-editor";
 import { Project } from "@/prisma/generated/prisma";
+import calculatePagination from "@/utils/calculate-pagination";
+import { useQuery } from "@tanstack/react-query";
 import { Plug, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -24,16 +27,54 @@ import { toast } from "sonner";
 const Navbar = ({
   projects,
   connections,
-  connectionId,
+  connection,
   id,
 }: {
   projects: Array<Project>;
   connections: Array<DatabaseConnectionWithConnectionDetails>;
-  connectionId?: string;
+  connection?: DatabaseConnectionWithConnectionDetails;
   id: string;
 }) => {
+  const connectionId: string | undefined = connection
+    ? connection.id
+    : undefined;
+  const queryLimit = connections.length;
   const { database, setDatabase } = useSqlEditor();
   const router = useRouter();
+
+  async function getConnections(): Promise<
+    APIResponse<Array<DatabaseConnectionWithConnectionDetails>>
+  > {
+    try {
+      const response = await fetch(`/api/project/${id}/connections`);
+
+      const body: APIResponse<Array<DatabaseConnectionWithConnectionDetails>> =
+        await response.json();
+      if (!response.ok) throw body;
+
+      return body;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  const { data: cachedConnections } = useQuery<
+    APIResponse<Array<DatabaseConnectionWithConnectionDetails>>
+  >({
+    queryKey: ["project", "connections", id],
+    initialData: {
+      message: "Data retrieved",
+      items: connections,
+      pagination: calculatePagination({
+        totalRecords: connections.length,
+        limit: queryLimit,
+        offset: 0,
+      }),
+    },
+    queryFn: getConnections,
+    refetchOnWindowFocus: false,
+  });
 
   const handleProjectChange = (projectId: string) => {
     router.push(`/studio/project/${projectId}/connection`);
@@ -44,7 +85,7 @@ const Navbar = ({
   };
 
   return (
-    <div className="w-[calc(100%-32px)] p-4 flex items-center border rounded-lg mx-4 justify-between fixed top-4 bg-background z-[10]">
+    <div className="w-full flex items-center border-b  justify-between fixed  bg-background z-[10] px-4 py-2">
       <div className="flex h-[32px] items-center">
         <div className="select-none mr-3">
           <p>
@@ -58,6 +99,7 @@ const Navbar = ({
           connections={connections!}
           id={id}
           projects={projects!}
+          connection={connection}
         />
       </div>
       {database && (
@@ -108,7 +150,7 @@ const Navbar = ({
           </SelectTrigger>
           {connections.length > 0 && (
             <SelectContent>
-              {connections.map((connection) => (
+              {cachedConnections.items?.map((connection) => (
                 <SelectItem value={connection.id} key={connection.id}>
                   {connection.name}
                 </SelectItem>

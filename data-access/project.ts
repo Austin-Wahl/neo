@@ -18,6 +18,24 @@ export const createProject = async (
   }
 };
 
+// DAL Function for deleting a project
+export const deleteProject = async (
+  id: string
+): DataAccessResponse<Project> => {
+  try {
+    const data = await prisma.project.delete({
+      where: {
+        id: id,
+      },
+    });
+
+    return [null, data];
+  } catch (error) {
+    console.log("[DATA ACCESS | deleteProject]", error);
+    return [error instanceof Error ? error : new Error(String(error)), null];
+  }
+};
+
 // DAL Function for retrieving projects
 export const getProjects = async (
   opts: Prisma.ProjectFindManyArgs

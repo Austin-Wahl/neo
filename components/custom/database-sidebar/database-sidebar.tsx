@@ -48,7 +48,7 @@ const DatabaseSidebar = ({
     getDatabases();
   }, []);
   return (
-    <Sidebar className="top-[68px] h-[calc(100svh-68px)]!" {...props}>
+    <Sidebar className="top-[68px] h-[calc(100svh-68px)]! bg-red-50" {...props}>
       <SidebarContent>
         {error && (
           <div className="p-2">

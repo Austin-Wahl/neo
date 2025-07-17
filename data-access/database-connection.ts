@@ -68,6 +68,52 @@ export const createConnection = async (opts: {
 };
 
 // DAL Function for deleting a new database connection
+export const updateConnection = async (
+  props: Partial<
+    Pick<DatabaseConnection, "databaseType" | "description" | "name">
+  > &
+    Partial<
+      Pick<Connection, "hostname" | "password" | "port" | "ssl" | "username">
+    > & { id: string }
+): DataAccessResponse<DatabaseConnectionWithConnectionDetails> => {
+  try {
+    const data = await prisma.$transaction(async () => {
+      await prisma.connection.update({
+        where: {
+          databaseConnectionId: props.id,
+        },
+        data: {
+          ...(props.hostname ? { hostname: props.hostname } : null),
+          ...(props.password ? { password: props.password } : null),
+          ...(props.port ? { port: props.port } : null),
+          ...(props.ssl ? { ssl: props.ssl } : null),
+          ...(props.username ? { username: props.username } : null),
+          ...(props.databaseType ? { databaseType: props.databaseType } : null),
+        },
+      });
+
+      const databaseConnection = await prisma.databaseConnection.update({
+        where: {
+          id: props.id,
+        },
+        data: {
+          ...(props.name ? { name: props.name } : null),
+          ...(props.description ? { description: props.description } : null),
+          ...(props.databaseType ? { databaseType: props.databaseType } : null),
+        },
+        include: databaseConnectionWithConnectionDetails,
+      });
+
+      return databaseConnection;
+    });
+
+    return [null, data];
+  } catch (error) {
+    return [error instanceof Error ? error : new Error(String(error)), null];
+  }
+};
+
+// DAL Function for deleting a new database connection
 export const deleteConnection = async (
   id: string
 ): DataAccessResponse<boolean> => {

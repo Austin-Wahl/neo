@@ -1,5 +1,5 @@
 "use client";
-import RawSqlEditorDialog from "@/components/custom/raw-sql-editor-dialog/raw-sql-editor-dialog";
+import UpdateConnectionDialog from "@/components/custom/update-connection-dialog/update-connection-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,7 +29,7 @@ import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-
 import useDeleteDatabaseConnection from "@/hooks/use-delete-database-connection";
 import useTestConnection from "@/hooks/use-test-connection";
 import { DatabaseTypes } from "@/prisma/generated/prisma";
-import { Edit, Ellipsis, Eye, Grid, Plug, Settings, Trash } from "lucide-react";
+import { Ellipsis, Eye, Grid, Plug, Settings, Trash } from "lucide-react";
 import Link from "next/link";
 import React, {
   ButtonHTMLAttributes,
@@ -45,9 +45,9 @@ const DBConnection = ({
   connection: DatabaseConnectionWithConnectionDetails;
 }) => {
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
-  const [rawSqlEditorOpen, setRawSqlEditorOpen] = useState(false);
   const [deleteOpen, setDeleteClose] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [configureOpen, setConfigureOpen] = useState(false);
 
   function getDatabaseLogo(databaseProvider: DatabaseTypes): string {
     switch (databaseProvider) {
@@ -65,10 +65,9 @@ const DBConnection = ({
   async function deleteConnection() {
     try {
       await mutateAsync({ connectionId: connection.id });
-      setIsDropdownOpen(false);
     } catch (error) {
       console.log(error);
-      setIsDropdownOpen(true);
+      throw error;
     }
   }
 
@@ -92,22 +91,26 @@ const DBConnection = ({
     }
   };
 
-  const handleRawSqlEditorClick = () => {
-    setRawSqlEditorOpen(true);
+  const handleDeleteClick = () => {
+    setDeleteClose(true);
     setIsDropdownOpen(false);
   };
-  const handleRawSqlEditorClose = (open: boolean) => {
-    setRawSqlEditorOpen(open);
+  const handleDeleteClose = (open: boolean) => {
+    setDeleteClose(open);
     if (!open) {
       setIsDropdownOpen(false);
     }
   };
 
-  const handleDeleteClick = () => {
-    setDeleteClose(true);
+  const handleConfigureClick = () => {
+    setConfigureOpen(true);
+    setIsDropdownOpen(false);
   };
-  const handleDeleteClose = () => {
-    setDeleteClose((prev) => !prev);
+  const handleConfigureClose = (open: boolean) => {
+    setConfigureOpen(open);
+    if (!open) {
+      setIsDropdownOpen(false);
+    }
   };
 
   return (
@@ -152,13 +155,9 @@ const DBConnection = ({
               <Eye />
               View Details
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleConfigureClick}>
               <Settings />
               Configure
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleRawSqlEditorClick}>
-              <Edit />
-              Raw SQL Editor
             </DropdownMenuItem>
             <Link
               href={`/studio/project/${connection.projectId}/connection/${connection.id}`}
@@ -169,7 +168,11 @@ const DBConnection = ({
               </DropdownMenuItem>
             </Link>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={handleDeleteClick}>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={handleDeleteClick}
+              disabled={status === "pending"}
+            >
               {removeIcon}
               Remove
             </DropdownMenuItem>
@@ -181,13 +184,6 @@ const DBConnection = ({
               connection={connection}
             />
           )}
-          {rawSqlEditorOpen && (
-            <RawSqlEditorDialog
-              onOpenChange={handleRawSqlEditorClose}
-              open={rawSqlEditorOpen}
-              connection={connection}
-            />
-          )}
           {deleteOpen && (
             <DeleteConnectionDialog
               onOpenChange={handleDeleteClose}
@@ -195,6 +191,14 @@ const DBConnection = ({
               icon={removeIcon}
               deleteConnection={deleteConnection}
               status={status}
+            />
+          )}
+          {configureOpen && (
+            <UpdateConnectionDialog
+              enableTrigger={false}
+              connection={connection}
+              open={configureOpen}
+              onOpenChange={handleConfigureClose}
             />
           )}
         </DropdownMenu>

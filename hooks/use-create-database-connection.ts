@@ -58,20 +58,21 @@ const useCreateDatabaseConnection = (projectId: string) => {
       }) => {
         if (!oldData) return oldData;
 
+        const updated = oldData.pages.map((page, i) => {
+          if (i > 0) return page;
+
+          return {
+            ...page,
+            items: [newProject, ...(page.items ?? [])],
+          };
+        });
         return {
           ...oldData,
-          pages: [
-            {
-              ...oldData.pages[0],
-              items: [newProject, ...(oldData.pages[0].items ?? [])],
-            },
-            ...oldData.pages.slice(1),
-          ],
+          pages: updated,
         };
       }
     );
   }
-
   return mutate;
 };
 

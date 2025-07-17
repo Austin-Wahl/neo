@@ -133,6 +133,8 @@ const CreateConnection = ({
     try {
       setError("");
       await mutateAsync(data);
+      form.reset();
+      setOpen(false);
     } catch (error) {
       setError(
         error instanceof Error
@@ -261,9 +263,6 @@ const CreateConnectionForm = ({
                         </SelectContent>
                       </Select>
                     </FormControl>
-                    <FormDescription>
-                      Hostname for where your database is hosted.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -481,11 +480,12 @@ const DesktopForm = ({
   asChild,
   sections,
   error,
+  trigger,
 }: CreateConnectionProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild={asChild} className="w-fit">
-        <CreateConnectionCardTrigger />
+        {trigger ? trigger : <CreateConnectionCardTrigger />}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

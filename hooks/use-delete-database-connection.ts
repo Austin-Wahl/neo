@@ -33,7 +33,7 @@ const useDeleteDatabaseConnection = (projectId: string) => {
       removeConnectionFromQueryClient(vars.connectionId);
     },
     onError: (e) => {
-      toast("Connection Not Created", {
+      toast("Connection Not deleted", {
         description: e instanceof Error ? e.message : "There was an issue.",
         dismissible: true,
       });

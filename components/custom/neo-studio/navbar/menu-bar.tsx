@@ -1,17 +1,14 @@
 "use client";
+import UpdateConnectionDialog from "@/components/custom/update-connection-dialog/update-connection-dialog";
 import {
   MenubarContent,
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
   MenubarShortcut,
-  MenubarSub,
-  MenubarSubContent,
-  MenubarSubTrigger,
   MenubarTrigger,
   Menubar as ShadMenubar,
 } from "@/components/ui/menubar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useDataGrid from "@/hooks/use-datagrid";
 import { Project } from "@/prisma/generated/prisma";
@@ -21,30 +18,31 @@ import {
   Download,
   Expand,
   Minimize,
+  Settings,
   Table,
   Upload,
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const Menubar = ({
-  projects,
-  connections,
-  connectionId,
-  id,
+  connection,
 }: {
   projects: Array<Project>;
   connections: Array<DatabaseConnectionWithConnectionDetails>;
   connectionId?: string;
+  connection?: DatabaseConnectionWithConnectionDetails;
   id: string;
 }) => {
+  const [editConnection, setEditConnection] = useState(false);
+
   const { fullScreen, setFullScreen, isActive } = useDataGrid();
-  const router = useRouter();
+
   return (
     <ShadMenubar className="border-none">
       <MenubarMenu>
-        <MenubarTrigger>File</MenubarTrigger>
+        <MenubarTrigger>Connection</MenubarTrigger>
         <MenubarContent>
           <Link href="/">
             <MenubarItem>
@@ -58,53 +56,13 @@ const Menubar = ({
             <Download /> Download Current SQL
           </MenubarItem>
           <MenubarSeparator />
-          <MenubarSub>
-            <MenubarSubTrigger>Current Project</MenubarSubTrigger>
-            <MenubarSubContent>
-              <ScrollArea className="h-[180px] overflow-y-auto">
-                {projects.map((project) => {
-                  return (
-                    <MenubarItem
-                      key={project.id}
-                      className={id == project.id ? "bg-accent" : ""}
-                      onClick={() =>
-                        router.push(`/studio/project/${id}/connection`)
-                      }
-                    >
-                      {project.name}
-                    </MenubarItem>
-                  );
-                })}
-              </ScrollArea>
-            </MenubarSubContent>
-          </MenubarSub>
-          <MenubarSub>
-            <MenubarSubTrigger>Current Connection</MenubarSubTrigger>
-            <MenubarSubContent>
-              <ScrollArea className="h-[180px] overflow-y-auto">
-                {connections.length <= 0 && (
-                  <MenubarItem>No Connections</MenubarItem>
-                )}
-                {connections.map((connection) => {
-                  return (
-                    <MenubarItem
-                      key={connection.id}
-                      className={
-                        connectionId == connection.id ? "bg-accent" : ""
-                      }
-                      onClick={() =>
-                        router.push(
-                          `/studio/project/${id}/connection/${connection.id}`
-                        )
-                      }
-                    >
-                      {connection.name}
-                    </MenubarItem>
-                  );
-                })}
-              </ScrollArea>
-            </MenubarSubContent>
-          </MenubarSub>
+          <MenubarItem
+            disabled={connection ? false : true}
+            onClick={() => setEditConnection(true)}
+          >
+            <Settings />
+            Configure Connection
+          </MenubarItem>
           <MenubarSeparator />
           <MenubarItem>Print</MenubarItem>
         </MenubarContent>
@@ -167,6 +125,14 @@ const Menubar = ({
             </MenubarItem>
           </Link>
         </MenubarContent>
+        {editConnection && connection !== undefined ? (
+          <UpdateConnectionDialog
+            connection={connection}
+            enableTrigger={false}
+            open={editConnection}
+            onOpenChange={setEditConnection}
+          />
+        ) : null}
       </MenubarMenu>
     </ShadMenubar>
   );
