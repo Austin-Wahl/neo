@@ -26,7 +26,7 @@ const EditorView = ({
       connection={connection}
       setData={setData}
       setRequestState={setRequestState}
-      className="flex flex-col gap-4"
+      className="flex flex-col h-full"
     />
   );
 };

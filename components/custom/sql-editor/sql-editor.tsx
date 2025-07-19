@@ -7,7 +7,7 @@ import useSqlEditor from "@/hooks/use-sql-editor";
 import { NeoRow, NeoSqlError } from "@/services/types";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { Editor } from "@monaco-editor/react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Flag } from "lucide-react";
 import React, {
   Dispatch,
   SetStateAction,
@@ -94,6 +94,14 @@ const SQLEditor = ({
     }
   }, [code, connection.id, database, setData, setRequestState]);
 
+  const handleReset = () => {
+    setInit(false);
+    setLoading(false);
+    setRequestState(null);
+    setCode("");
+    setError("");
+  };
+
   useEffect(() => {
     setCode(sql);
 
@@ -102,7 +110,7 @@ const SQLEditor = ({
 
   useEffect(() => {
     if (!sql || init) return;
-    console.log("SQL Changes", sql, init);
+    setError("");
     setDatabase(databaseContext);
     handleExecute();
     setInit(true);
@@ -110,38 +118,39 @@ const SQLEditor = ({
 
   return (
     <div {...props}>
+      <div className="flex items-center justify-between border-b p-1">
+        <div>
+          <Button variant="outline" onClick={() => handleReset}>
+            Reset
+          </Button>
+        </div>
+        <Button disabled={!code || loading} onClick={handleExecute}>
+          {loading && <PuffLoader size={16} />}Execute
+        </Button>
+      </div>
+      {error && (
+        <div className="w-full p-4">
+          <Alert variant="destructive">
+            <AlertCircle />
+            <AlertTitle>Query failed!</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      )}
       <Editor
-        height="300px"
+        className={`!flex-1 min-h-[300px]`}
         defaultLanguage="sql"
         defaultValue=""
         onChange={setCode}
         theme="vs-dark"
         value={sql}
+        loading={"fuck"}
         options={{
           minimap: {
             enabled: true,
           },
         }}
       />
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle />
-          <AlertTitle>Query failed!</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="p-4 border bg-card rounded-lg flex items-center justify-between">
-        <div>
-          <p>Run query</p>
-          <p className="text-sm text-muted-foreground">
-            Your query will be ran against your database.
-          </p>
-        </div>
-        <Button disabled={!code || loading} onClick={handleExecute}>
-          {loading && <PuffLoader size={16} />}Execute
-        </Button>
-      </div>
     </div>
   );
 };

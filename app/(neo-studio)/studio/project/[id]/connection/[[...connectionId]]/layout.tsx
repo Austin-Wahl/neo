@@ -101,8 +101,8 @@ export default async function NoNavLayout({
                   exploreType={exploreType}
                   identifierQuote={identifierQuote}
                 />
-                <SidebarInset className="relative h-[calc(100%-8px)] overflow-hidden w-full bg-backdrop m-2">
-                  <div className="absolute overflow-auto w-full h-full">
+                <SidebarInset className="relative h-[calc(100%-8px)] overflow-hidden w-full bg-backdrop">
+                  <div className="absolute overflow-hidden w-full h-full">
                     {children}
                   </div>
                 </SidebarInset>

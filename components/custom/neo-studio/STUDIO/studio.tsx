@@ -24,9 +24,58 @@ import { PulseLoader } from "react-spinners";
 import EditorView from "@/components/custom/neo-studio/views/editor-view/editor-view";
 import ResultsView from "@/components/custom/neo-studio/views/results-view/results-view";
 import { IJsonModel, Layout, Model, TabNode } from "flexlayout-react";
-import "flexlayout-react/style/dark.css";
+import "@/components/custom/flexlayout/styles.css";
 
 export type ViewId = "Editor" | "Results" | "c" | "new";
+
+const json: IJsonModel = {
+  global: {},
+  borders: [],
+  layout: {
+    type: "row",
+    weight: 100,
+    children: [
+      {
+        type: "row",
+        weight: 30,
+        children: [
+          // {
+          //   type: "tabset",
+          //   weight: 50,
+          //   children: [
+          //     {
+          //       type: "editor",
+          //       name: "Editor",
+          //     },
+          //   ],
+          // },
+          {
+            type: "tabset",
+            weight: 50,
+            children: [
+              {
+                type: "editor",
+                name: "Editor",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: "tabset",
+        weight: 50,
+        children: [
+          {
+            type: "tab",
+            name: "Results",
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const model = Model.fromJson(json);
 
 const Studio = ({
   connection,
@@ -50,52 +99,7 @@ const Studio = ({
       setIsActive(true);
     }
   }, [data]);
-  const json: IJsonModel = {
-    global: {},
-    borders: [],
-    layout: {
-      type: "row",
-      weight: 100,
-      children: [
-        {
-          type: "row",
-          weight: 100,
-          children: [
-            {
-              type: "tabset",
-              weight: 50,
-              children: [
-                {
-                  type: "editor",
-                  name: "Editor",
-                },
-              ],
-            },
-            {
-              type: "tabset",
-              weight: 50,
-              children: [
-                {
-                  type: "editor",
-                  name: "Editor",
-                },
-              ],
-            },
-          ],
-        },
-        {
-          type: "tabset",
-          weight: 50,
-          children: [
-            {
-              type: "tab",
-              name: "Results",
-            },
-          ],
-        },
-      ],
-    },
-  };
+
   const factory = (node: TabNode) => {
     const component = node.getName();
 
@@ -114,7 +118,6 @@ const Studio = ({
       return <ResultsView requestState={requestState} />;
     }
   };
-  const model = Model.fromJson(json);
 
   return (
     <Layout model={model} factory={factory} />
