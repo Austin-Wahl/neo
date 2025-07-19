@@ -7,7 +7,7 @@ import useSqlEditor from "@/hooks/use-sql-editor";
 import { NeoRow, NeoSqlError } from "@/services/types";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { Editor } from "@monaco-editor/react";
-import { AlertCircle, Flag } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import React, {
   Dispatch,
   SetStateAction,
