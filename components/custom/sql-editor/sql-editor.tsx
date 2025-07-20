@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useSqlEditor from "@/hooks/use-sql-editor";
+import useStudioLayout from "@/hooks/use-studio-layout";
 import { NeoRow, NeoSqlError } from "@/services/types";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { Editor } from "@monaco-editor/react";
@@ -38,7 +39,8 @@ const SQLEditor = ({
     }> | null>
   >;
 } & React.ComponentProps<"div">) => {
-  const { sql, database: databaseContext } = useSqlEditor();
+  const { getActiveView, activeViews, activeView } = useStudioLayout();
+  const { getEditorInstance, editorInstances } = useSqlEditor();
   const [code, setCode] = useState<string | undefined>("");
   const [init, setInit] = useState(false);
   const [database, setDatabase] = useState<string | undefined>("");
@@ -103,18 +105,18 @@ const SQLEditor = ({
   };
 
   useEffect(() => {
-    setCode(sql);
+    if (init) return;
 
-    setInit(false);
-  }, [sql, database]);
+    const editorInstance = getEditorInstance(getActiveView()!.getId());
+    const sql = editorInstance?.sql;
+
+    setDatabase(editorInstance?.database);
+    setCode(sql);
+  }, [editorInstances, getActiveView, getEditorInstance, init]);
 
   useEffect(() => {
-    if (!sql || init) return;
-    setError("");
-    setDatabase(databaseContext);
-    handleExecute();
-    setInit(true);
-  }, [sql, init]);
+    console.log("the open view is", activeView);
+  }, [activeView]);
 
   return (
     <div {...props}>
@@ -143,8 +145,8 @@ const SQLEditor = ({
         defaultValue=""
         onChange={setCode}
         theme="vs-dark"
-        value={sql}
-        loading={"fuck"}
+        value={code}
+        loading={"Initializing"}
         options={{
           minimap: {
             enabled: true,

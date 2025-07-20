@@ -40,18 +40,14 @@ const Navbar = ({
     ? connection.id
     : undefined;
   const queryLimit = connections.length;
-  const { getEditorInstance } = useSqlEditor();
+  const { getEditorInstance, setDatabase } = useSqlEditor();
   const { getActiveView } = useStudioLayout();
 
   // Get the active database if there is one
   // Get the activeViewId first
   const activeViewId = getActiveView()?.getId();
   const editorInstance = getEditorInstance(activeViewId);
-  let database = undefined;
 
-  if (editorInstance) {
-    database = editorInstance.database;
-  }
   const router = useRouter();
 
   async function getConnections(): Promise<
@@ -114,17 +110,17 @@ const Navbar = ({
           connection={connection}
         />
       </div>
-      {database && (
+      {editorInstance?.database && (
         <div className="rounded-lg border flex items-center text-xs justify-between gap-4 overflow-hidden">
           <div className="p-2 flex items-center gap-2">
             <Plug size={12} />
-            <p>{database}</p>
+            <p>{editorInstance?.database}</p>
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 onClick={() => {
-                  editorInstance!.setDatabase("");
+                  setDatabase({ viewId: editorInstance.viewId, database: "" });
                   toast("No Database is selected.");
                 }}
                 className="!bg-background hover:bg-accent rounded-none border-l-[1px] border-border cursor-pointer hover:text-primary text-muted-foreground"

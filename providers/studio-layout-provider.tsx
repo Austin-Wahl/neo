@@ -2,10 +2,12 @@
 import {
   Action,
   Actions,
+  DockLocation,
   IJsonModel,
   Layout,
   Model,
   Node,
+  TabNode,
   TabSetNode,
 } from "flexlayout-react";
 import {
@@ -24,7 +26,8 @@ interface StudioLayout {
   addView: (view: View) => string;
   removeView: (viewId: string) => void;
   activeViews: Record<string, View>;
-  getActiveView: () => TabSetNode | undefined;
+  getActiveView: () => TabNode | undefined;
+  activeView: TabNode | undefined;
 }
 
 export type View = "Editor" | "Results" | "Scratchpad" | "Graph";
@@ -86,6 +89,7 @@ export const StudioLayoutContext = createContext<StudioLayout>({
   removeView: () => {},
   activeViews: {},
   getActiveView: () => undefined,
+  activeView: undefined,
 });
 
 const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
@@ -93,9 +97,77 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
   const layoutRef = useRef<Layout>(null);
   const [model, setModel] = useState<Model>(Model.fromJson(defaultModelJson));
   const [activeViews, setActiveViews] = useState<Record<string, View>>({});
+  const [activeView, setActiveView] = useState<TabNode | undefined>(undefined);
 
-  function getActiveView(): TabSetNode | undefined {
-    return model.getActiveTabset();
+  function ensureActiveTabset(): TabSetNode | undefined {
+    let activeTabset = model.getActiveTabset();
+
+    if (!activeTabset) {
+      console.warn(
+        "No active tabset found. Attempting to select or create one."
+      );
+
+      // Try to select the first available tabset
+      const firstTabset = model
+        .getRoot()
+        .getChildren()
+        .find((node) => node.getType() === "tabset");
+
+      if (firstTabset) {
+        console.log("Selecting the first available tabset.");
+        activeTabset = firstTabset as TabSetNode;
+        model.doAction(Actions.setActiveTabset(activeTabset.getId()));
+        setModel(Model.fromJson(model.toJson())); // Trigger React state update
+      } else {
+        console.log("No tabset exists. Creating a new tabset.");
+        const newTabsetId = `tabset-${Date.now()}`;
+        const newTabId = `tab-${Date.now()}`;
+
+        // Create a new tabset with a default tab
+        model.doAction(
+          Actions.addNode(
+            {
+              type: "tabset",
+              id: newTabsetId,
+              children: [
+                {
+                  type: "tab",
+                  id: newTabId,
+                  name: "New Editor",
+                  component: "Editor",
+                },
+              ],
+            },
+            "root",
+            DockLocation.CENTER,
+            0
+          )
+        );
+
+        // Set the new tabset as active
+        activeTabset = model.getNodeById(newTabsetId) as TabSetNode;
+        model.doAction(Actions.setActiveTabset(newTabsetId));
+        setModel(Model.fromJson(model.toJson())); // Trigger React state update
+      }
+    }
+
+    return activeTabset;
+  }
+
+  function getActiveView(): TabNode | undefined {
+    const activeTabset = ensureActiveTabset();
+
+    // Get the ID of the selected tab in the active tabset
+    const activeTabId = activeTabset?.getSelectedNode()?.getId();
+
+    if (activeTabId) {
+      // Retrieve the TabNode using the ID
+      setActiveView(model.getNodeById(activeTabId) as TabNode);
+      return model.getNodeById(activeTabId) as TabNode;
+    }
+    setActiveView(undefined);
+    // If no active tab is found, return undefined
+    return undefined;
   }
 
   function addView(view: View): string {
@@ -218,6 +290,7 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
         removeView,
         activeViews,
         getActiveView,
+        activeView,
       }}
     >
       {children}

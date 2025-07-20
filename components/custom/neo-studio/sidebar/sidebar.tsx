@@ -429,7 +429,8 @@ const SchemaTable = ({
   connectionId: string;
   icon?: ReactNode;
 } & SupportedDatabaseProps) => {
-  const { getEditorInstanceOrForceCreate } = useSqlEditor();
+  const { getEditorInstanceOrForceCreate, setSql, setDatabase } =
+    useSqlEditor();
   const { getActiveView } = useStudioLayout();
   const [error, setError] = useState("");
   const { open } = useSidebar();
@@ -476,14 +477,20 @@ const SchemaTable = ({
     }
   }
 
-  function handleSidebarElmClick(item) {
+  function handleSidebarElmClick(item: string) {
     const activeViewId = getActiveView()?.getId();
-    console.log(activeViewId);
     const instance = getEditorInstanceOrForceCreate(activeViewId);
     console.log("instance", instance);
-    instance.sql = `SELECT * FROM ${schema}.${identifierQuote}${item}${identifierQuote}`;
-    instance.database = item.database;
+    setSql({
+      sql: `SELECT * FROM ${schema}.${identifierQuote}${item}${identifierQuote}`,
+      viewId: instance.viewId,
+    });
+    setDatabase({
+      database: database,
+      viewId: instance.viewId,
+    });
   }
+
   return (
     <ContextMenu>
       <Collapsible
