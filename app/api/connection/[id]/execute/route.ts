@@ -5,7 +5,7 @@ import { NeoSqlError } from "@/services/types";
 import getServerSideSession from "@/utils/getServerSideSession";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { NextRequest, NextResponse } from "next/server";
-import { validate } from "uuid";
+import { validate, v4 } from "uuid";
 
 interface TestConnectionRouteParams {
   params: Promise<{
@@ -116,12 +116,14 @@ export const POST = async (
           message: "Query executed successfully!",
           data: {
             result: results,
+            queryId: v4(),
           },
         } as APIResponse<{
           result: {
             fields: unknown[];
             rows: unknown[];
           };
+          queryId: string;
         }>,
         { status: 200 }
       );

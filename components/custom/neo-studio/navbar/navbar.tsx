@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useSqlEditor from "@/hooks/use-sql-editor";
+import useStudioLayout from "@/hooks/use-studio-layout";
 import { Project } from "@/prisma/generated/prisma";
 import calculatePagination from "@/utils/calculate-pagination";
 import { useQuery } from "@tanstack/react-query";
@@ -39,8 +40,18 @@ const Navbar = ({
     ? connection.id
     : undefined;
   const queryLimit = connections.length;
-  const { database, setDatabase } = useSqlEditor();
+  const { getEditorInstance } = useSqlEditor();
+  const { getActiveView } = useStudioLayout();
 
+  // Get the active database if there is one
+  // Get the activeViewId first
+  const activeViewId = getActiveView()?.getId();
+  const editorInstance = getEditorInstance(activeViewId);
+  let database = undefined;
+
+  if (editorInstance) {
+    database = editorInstance.database;
+  }
   const router = useRouter();
 
   async function getConnections(): Promise<
@@ -113,7 +124,7 @@ const Navbar = ({
             <TooltipTrigger asChild>
               <Button
                 onClick={() => {
-                  setDatabase("");
+                  editorInstance!.setDatabase("");
                   toast("No Database is selected.");
                 }}
                 className="!bg-background hover:bg-accent rounded-none border-l-[1px] border-border cursor-pointer hover:text-primary text-muted-foreground"

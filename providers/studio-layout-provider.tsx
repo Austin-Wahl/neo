@@ -1,5 +1,12 @@
 "use client";
-import { Action, Actions, IJsonModel, Layout, Model } from "flexlayout-react";
+import {
+  Action,
+  Actions,
+  IJsonModel,
+  Layout,
+  Model,
+  TabSetNode,
+} from "flexlayout-react";
 import {
   createContext,
   ReactNode,
@@ -16,6 +23,7 @@ interface StudioLayout {
   addView: (view: View) => string;
   removeView: (viewId: string) => void;
   activeViews: Record<string, View>;
+  getActiveView: () => TabSetNode | undefined;
 }
 
 export type View = "Editor" | "Results" | "Scratchpad" | "Graph";
@@ -76,6 +84,7 @@ export const StudioLayoutContext = createContext<StudioLayout>({
   },
   removeView: () => {},
   activeViews: {},
+  getActiveView: () => undefined,
 });
 
 const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
@@ -83,6 +92,10 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
   const layoutRef = useRef<Layout>(null);
   const [model, setModel] = useState<Model>(Model.fromJson(defaultModelJson));
   const [activeViews, setActiveViews] = useState<Record<string, View>>({});
+
+  function getActiveView(): TabSetNode | undefined {
+    return model.getActiveTabset();
+  }
 
   function addView(view: View): string {
     if (layoutRef.current) {
@@ -165,6 +178,17 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
     const model = Model.fromJson(json);
 
     setModel(model);
+
+    // Set active views record
+    const children = model.getRoot().getChildren();
+
+    function traverse(node: Node) {
+        node.
+    }
+    children.map((child) => {
+      const childId = child.forEachNode((node) => )
+    });
+    console.log(children);
   };
 
   // Listen for changes in model and apply them to LS
@@ -181,7 +205,15 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <StudioLayoutContext.Provider
-      value={{ model, save, addView, layoutRef, removeView, activeViews }}
+      value={{
+        model,
+        save,
+        addView,
+        layoutRef,
+        removeView,
+        activeViews,
+        getActiveView,
+      }}
     >
       {children}
     </StudioLayoutContext.Provider>
