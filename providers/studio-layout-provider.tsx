@@ -5,6 +5,7 @@ import {
   IJsonModel,
   Layout,
   Model,
+  Node,
   TabSetNode,
 } from "flexlayout-react";
 import {
@@ -177,24 +178,28 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
     const json = JSON.parse(jsonText);
     const model = Model.fromJson(json);
 
+    const views = traverse(model.getRoot());
+    setActiveViews((prev) => ({ ...prev, ...Object.assign({}, ...views) }));
     setModel(model);
-
-    // Set active views record
-    const children = model.getRoot().getChildren();
-
-    function traverse(node: Node) {
-        node.
-    }
-    children.map((child) => {
-      const childId = child.forEachNode((node) => )
-    });
-    console.log(children);
   };
+
+  function traverse(node: Node): Array<Record<string, View>> {
+    let res: Array<Record<string, View>> = [];
+
+    if (node.getType() === "tab") {
+      res.push({ [node.getId()]: node.getAttr("name") });
+    } else if (node.getChildren()) {
+      node.getChildren().forEach((child) => {
+        res = res.concat(traverse(child));
+      });
+    }
+
+    return res;
+  }
 
   // Listen for changes in model and apply them to LS
   useEffect(() => {
     if (model) {
-      console.warn("STUDIO DETECTED CHANGE IN LAYOUT. SAVING...");
       save(model);
     }
   }, [model]);

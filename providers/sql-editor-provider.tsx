@@ -13,6 +13,7 @@ interface SqlEditorContextProps {
   editorInstances: Array<EditorInstance>;
   setEditorInstances: Dispatch<SetStateAction<Array<EditorInstance>>>;
   getEditorInstance: (viewId?: string) => EditorInstance | undefined;
+  getEditorInstanceOrForceCreate: (viewId?: string) => EditorInstance;
 }
 
 interface EditorInstance {
@@ -20,14 +21,18 @@ interface EditorInstance {
   queryId?: string;
   sql: string;
   database?: string;
-  setSql: React.Dispatch<React.SetStateAction<string>>;
-  setDatabase: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export const sqlEditorContext = createContext<SqlEditorContextProps>({
   editorInstances: [],
   getEditorInstance: () => undefined,
   setEditorInstances: () => {},
+  getEditorInstanceOrForceCreate: () => {
+    return {
+      sql: "",
+      viewId: "",
+    };
+  },
 });
 
 const SqlEditorProvider = ({ children }: { children: ReactNode }) => {
@@ -51,42 +56,49 @@ const SqlEditorProvider = ({ children }: { children: ReactNode }) => {
    *
    * Gets the active editor Instance or creates one if one is not active
    */
-  function getEditorInstanceOrForceCreate(viewId?: string) {
+  function getEditorInstanceOrForceCreate(viewId?: string): EditorInstance {
     const activeInstance = getEditorInstance(viewId);
 
     if (!activeInstance) {
       const viewId = addView("Editor");
-      getEditorInstance(viewId);
+      return getEditorInstance(viewId)!;
+    } else {
+      return activeInstance;
     }
   }
 
   useEffect(() => {
-    console.warn("ACTIVE VIEWS HAS CHANGED. CHECKING FOR EDITOR INSTANCES");
-
     // Loop over activeView keys
-    Object.keys(activeViews).map((viewId, index) => {
+    Object.keys(activeViews).map((viewId) => {
       // Get view type
       const typeOfView = activeViews[viewId];
 
       // If the view is an editor and it has not been added to the editorInstances state var, add it
       if (typeOfView === "Editor") {
         if (!getEditorInstance(viewId)) {
-          console.warn("New instance found. Adding to instance state");
-          // setEditorInstances((prev) => {
-          //   return [{
-          //    viewId,
-
-          //   }, ...prev];
-          // });
+          setEditorInstances((prev) => {
+            return [
+              {
+                viewId,
+                sql: "",
+                database: "",
+              },
+              ...prev,
+            ];
+          });
         }
       }
     });
-    console.warn("Editor Instances", editorInstances);
   }, [activeViews]);
 
   return (
     <sqlEditorContext.Provider
-      value={{ editorInstances, setEditorInstances, getEditorInstance }}
+      value={{
+        editorInstances,
+        setEditorInstances,
+        getEditorInstance,
+        getEditorInstanceOrForceCreate,
+      }}
     >
       {children}
     </sqlEditorContext.Provider>

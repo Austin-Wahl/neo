@@ -38,6 +38,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import useSqlEditor from "@/hooks/use-sql-editor";
+import useStudioLayout from "@/hooks/use-studio-layout";
 import { cn } from "@/lib/utils";
 import { SupportedDatabaseProps } from "@/supported-databases";
 import { useQuery } from "@tanstack/react-query";
@@ -428,7 +429,8 @@ const SchemaTable = ({
   connectionId: string;
   icon?: ReactNode;
 } & SupportedDatabaseProps) => {
-  const { setSql, setDatabase } = useSqlEditor();
+  const { getEditorInstanceOrForceCreate } = useSqlEditor();
+  const { getActiveView } = useStudioLayout();
   const [error, setError] = useState("");
   const { open } = useSidebar();
   const [init, setInit] = useState(false);
@@ -472,6 +474,15 @@ const SchemaTable = ({
         throw error;
       }
     }
+  }
+
+  function handleSidebarElmClick(item) {
+    const activeViewId = getActiveView()?.getId();
+    console.log(activeViewId);
+    const instance = getEditorInstanceOrForceCreate(activeViewId);
+    console.log("instance", instance);
+    instance.sql = `SELECT * FROM ${schema}.${identifierQuote}${item}${identifierQuote}`;
+    instance.database = item.database;
   }
   return (
     <ContextMenu>
@@ -519,10 +530,7 @@ const SchemaTable = ({
                       className="overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer select-none"
                       key={i}
                       onClick={() => {
-                        setSql(
-                          `SELECT * FROM ${schema}.${identifierQuote}${item}${identifierQuote}`
-                        );
-                        setDatabase(database);
+                        handleSidebarElmClick(item);
                       }}
                     >
                       <Table />
