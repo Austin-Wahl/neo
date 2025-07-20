@@ -1,98 +1,25 @@
 "use client";
 
-import { APIResponse } from "@/app/(neo)/types/types";
-import DataGrid from "@/components/custom/data-grid/data-grid";
-import SQLEditor from "@/components/custom/sql-editor/sql-editor";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
-import useDataGrid from "@/hooks/use-datagrid";
-import { NeoRow } from "@/services/types";
-import { JSX, useEffect, useState } from "react";
-import { Column } from "react-data-grid";
-import { PulseLoader } from "react-spinners";
+import "@/components/custom/flexlayout/styles.css";
 import EditorView from "@/components/custom/neo-studio/views/editor-view/editor-view";
 import ResultsView from "@/components/custom/neo-studio/views/results-view/results-view";
-import { IJsonModel, Layout, Model, TabNode } from "flexlayout-react";
-import "@/components/custom/flexlayout/styles.css";
-
-export type ViewId = "Editor" | "Results" | "c" | "new";
-
-const json: IJsonModel = {
-  global: {},
-  borders: [],
-  layout: {
-    type: "row",
-    weight: 100,
-    children: [
-      {
-        type: "row",
-        weight: 30,
-        children: [
-          // {
-          //   type: "tabset",
-          //   weight: 50,
-          //   children: [
-          //     {
-          //       type: "editor",
-          //       name: "Editor",
-          //     },
-          //   ],
-          // },
-          {
-            type: "tabset",
-            weight: 50,
-            children: [
-              {
-                type: "editor",
-                name: "Editor",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        type: "tabset",
-        weight: 50,
-        children: [
-          {
-            type: "tab",
-            name: "Results",
-          },
-        ],
-      },
-    ],
-  },
-};
-
-const model = Model.fromJson(json);
+import { Button } from "@/components/ui/button";
+import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
+import useDataGrid from "@/hooks/use-datagrid";
+import useStudioLayout from "@/hooks/use-studio-layout";
+import { Layout, TabNode } from "flexlayout-react";
+import { useEffect, useState } from "react";
 
 const Studio = ({
   connection,
 }: {
   connection: DatabaseConnectionWithConnectionDetails;
 }) => {
-  const { fullScreen, setIsActive, data } = useDataGrid();
+  const { setIsActive, data } = useDataGrid();
+  const { model, layoutRef, addView } = useStudioLayout();
   const [requestState, setRequestState] = useState<
     "loading" | "loaded" | "error" | null
   >(null);
-
-  // const [data, setData] = useState<APIResponse<{
-  //   result: {
-  //     fields: Column<NeoRow>[];
-  //     rows: NeoRow[];
-  //   };
-  // }> | null>(null);
 
   useEffect(() => {
     if (data) {
@@ -117,10 +44,26 @@ const Studio = ({
     if (component === "Results") {
       return <ResultsView requestState={requestState} />;
     }
+
+    if (component === "Random") {
+      return (
+        <div>
+          <Button
+            onClick={() => {
+              addView("Editor");
+            }}
+          >
+            add
+          </Button>
+        </div>
+      );
+    }
   };
 
   return (
-    <Layout model={model} factory={factory} />
+    <>
+      <Layout model={model} factory={factory} ref={layoutRef} />
+    </>
     // <ResizablePanelGroup
     //   direction="horizontal"
     //   className="w-full h-full min-h-[500px] "

@@ -40,6 +40,7 @@ const Navbar = ({
     : undefined;
   const queryLimit = connections.length;
   const { database, setDatabase } = useSqlEditor();
+
   const router = useRouter();
 
   async function getConnections(): Promise<

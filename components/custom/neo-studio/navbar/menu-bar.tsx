@@ -10,22 +10,35 @@ import {
   Menubar as ShadMenubar,
 } from "@/components/ui/menubar";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
-import useDataGrid from "@/hooks/use-datagrid";
+import useStudioLayout from "@/hooks/use-studio-layout";
 import { Project } from "@/prisma/generated/prisma";
+import { View } from "@/providers/studio-layout-provider";
 import {
   Book,
+  ChartArea,
   Code,
   Download,
-  Expand,
-  Minimize,
+  LucideProps,
+  Notebook,
   Settings,
   Table,
   Upload,
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { ForwardRefExoticComponent, RefAttributes, useState } from "react";
 
+const viewAndIcon: Record<
+  View,
+  ForwardRefExoticComponent<
+    Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
+  >
+> = {
+  Editor: Code,
+  Graph: ChartArea,
+  Results: Table,
+  Scratchpad: Notebook,
+};
 const Menubar = ({
   connection,
 }: {
@@ -36,8 +49,7 @@ const Menubar = ({
   id: string;
 }) => {
   const [editConnection, setEditConnection] = useState(false);
-
-  const { fullScreen, setFullScreen, isActive } = useDataGrid();
+  const { addView } = useStudioLayout();
 
   return (
     <ShadMenubar className="border-none">
@@ -84,29 +96,14 @@ const Menubar = ({
       <MenubarMenu>
         <MenubarTrigger>View</MenubarTrigger>
         <MenubarContent>
-          <MenubarItem
-            onClick={(e) => {
-              e.stopPropagation();
-              setFullScreen((prev) => !prev);
-            }}
-            disabled={!isActive}
-          >
-            {fullScreen ? (
-              <>
-                <Minimize />
-                Minimize Grid
-              </>
-            ) : (
-              <>
-                <Expand />
-                Expand Grid
-              </>
-            )}
-          </MenubarItem>
-          <MenubarItem disabled={!isActive}>
-            <Table />
-            Table Layout
-          </MenubarItem>
+          {(Object.keys(viewAndIcon) as View[]).map((key, i) => {
+            const Icon = viewAndIcon[key];
+            return (
+              <MenubarItem key={i} onClick={() => addView(key)}>
+                <Icon /> {key}
+              </MenubarItem>
+            );
+          })}
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>
