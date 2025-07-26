@@ -55,85 +55,105 @@ const SQLEditor = ({
   const [, setError] = useState("");
   const { calculateDefaultQueryName } = useResultsStore();
   const [queryName, setQueryName] = useState<undefined | string>(undefined);
+  const queryNameRef = useRef<undefined | string>(undefined);
   const queryId = useRef<undefined | string>(undefined);
 
-  // When the editor loads, check for an instance; if one doesnt exist, create it
-  // Also set the default queryName
   useEffect(() => {
+    // Initialize the editor instance and set default values
     let editorInstance = getEditorInstance(viewId);
     if (!editorInstance) {
       editorInstance = createInstance(viewId);
     }
 
-    setCode(editorInstance?.sql);
-    setDatabase(editorInstance?.database);
-    queryId.current = editorInstance?.queryId;
+    // Set initial state for code, database, and queryId
+    setCode(editorInstance?.sql || "");
+    setDatabase(editorInstance?.database || "");
+    queryId.current = editorInstance?.queryId || undefined;
 
+    // Set the query name if queryId exists
     if (queryId.current) {
-      setQueryName(
-        store.getCell("result", queryId.current!, "queryName") as string
-      );
+      const queryName = store.getCell(
+        "result",
+        queryId.current,
+        "queryName"
+      ) as string;
+      setQueryName(queryName || "");
+      queryNameRef.current = queryName || "";
     }
-  }, []);
 
+    // Add a listener to keep the editor in sync with the store
+    if (queryId.current) {
+      const editorListenerId = store.addRowListener(
+        "editors",
+        queryId.current,
+        (store) => {
+          const sqlCell = store.getCell("editors", queryId.current!, "sql");
+          const databaseCell = store.getCell(
+            "editors",
+            queryId.current!,
+            "database"
+          );
+
+          if (code !== sqlCell) {
+            setCode(sqlCell as string);
+          }
+
+          if (database !== databaseCell) {
+            setDatabase(databaseCell as string);
+          }
+        }
+      );
+      const resultListenerId = store.addRowListener(
+        "result",
+        queryId.current,
+        (store) => {
+          const nameCell = store.getCell(
+            "result",
+            queryId.current!,
+            "queryName"
+          );
+
+          if (queryName !== nameCell) {
+            setQueryName(nameCell as string);
+          }
+        }
+      );
+      return () => {
+        store.delListener(editorListenerId);
+        store.delListener(resultListenerId);
+      };
+    }
+  }, [viewId]);
+
+  // Sync the editor instance with the store whenever `code` or `database` changes
+  useEffect(() => {
+    if (!queryId.current) return;
+
+    // Update the store with the latest SQL and database values
+    store.setCell("editors", queryId.current, "sql", code || "");
+    store.setCell("editors", queryId.current, "database", database || "");
+  }, [code, database]);
+
+  // Ensure the editor instance is updated when editorInstances changes
   useEffect(() => {
     const editorInstance = getEditorInstance(viewId);
     if (editorInstance) {
-      setDatabase(editorInstance?.database);
-      setCode(editorInstance?.sql);
+      setCode(editorInstance.sql || "");
+      setDatabase(editorInstance.database || "");
     }
-  }, [editorInstances]);
+  }, [editorInstances, viewId]);
 
-  // Apply changes to the Store. This keeps all editors in sync with eachother
+  // Ensure the editor instance is initialized with the latest SQL
   useEffect(() => {
-    if (!queryId.current) return;
-    store.setCell("editors", queryId.current!, "sql", code || "");
-  }, [code]);
-
-  useEffect(() => {
-    if (!queryId.current) return;
-    store.setCell("editors", queryId.current!, "database", database || "");
-  }, [database]);
-
-  // Add change listener
-  useEffect(() => {
-    if (!queryId.current) return;
-    const id = store.addRowListener("editors", queryId.current!, (store) => {
-      const sqlCell = store.getCell("editors", queryId.current!, "sql");
-      const databaseCell = store.getCell(
-        "editors",
-        queryId.current!,
-        "database"
-      );
-
-      if (code !== sqlCell) {
-        setCode(sqlCell as string);
-      }
-
-      if (database !== databaseCell) {
-        setDatabase(databaseCell as string);
-      }
-    });
-
-    return () => {
-      store.delListener(id);
-    };
-  }, []);
-
-  // Listen for changes in the SQL and save it to the editor instance
-  useEffect(() => {
-    // Get the current editor instance
     const editorInstance = getEditorInstance(viewId);
-
     if (editorInstance && !editorInstance.sql) {
       editorInstance.sql = code || "";
-
       setSql({
         viewId,
         sql: code || "",
       });
     }
-  }, [code]);
+  }, [code, viewId]);
 
   // Main function for handeling the query execution
   // This function is also responsible for syncing data to the Editors and Results Sync Layer
@@ -175,7 +195,7 @@ const SQLEditor = ({
       });
 
       // Add results to store
-      const _queryName = queryName || calculateDefaultQueryName();
+      const _queryName = queryNameRef.current || calculateDefaultQueryName();
       store.setRow("result", queryId.current, {
         queryId: queryId.current,
         queryName: _queryName,
@@ -222,6 +242,7 @@ const SQLEditor = ({
 
   const handleNameChange = (value: string) => {
     setQueryName(value);
+    queryNameRef.current = value;
   };
 
   // Saving is handled mostly automatically. This function allows the user
