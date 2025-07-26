@@ -5,12 +5,19 @@ import {
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
-  MenubarShortcut,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
   MenubarTrigger,
   Menubar as ShadMenubar,
 } from "@/components/ui/menubar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
+import useDataGrid from "@/hooks/use-datagrid";
+import useResultsStore from "@/hooks/use-results-store";
+import useSqlEditor from "@/hooks/use-sql-editor";
 import useStudioLayout from "@/hooks/use-studio-layout";
+import store from "@/lib/tinybase";
 import { Project } from "@/prisma/generated/prisma";
 import { View } from "@/providers/studio-layout-provider";
 import {
@@ -20,6 +27,8 @@ import {
   Download,
   LucideProps,
   Notebook,
+  Plus,
+  RefreshCcw,
   Settings,
   Table,
   Upload,
@@ -49,7 +58,49 @@ const Menubar = ({
   id: string;
 }) => {
   const [editConnection, setEditConnection] = useState(false);
-  const { addView } = useStudioLayout();
+  const { addView, activeView } = useStudioLayout();
+  const { setSql, setDatabase, setQueryId } = useSqlEditor();
+  const { setDataGridQueryId, getDataGridInstance } = useDataGrid();
+  const { queryIdNameMap } = useResultsStore();
+
+  function handlePopulateEditor() {
+    const gridId = activeView?.getId();
+    if (!activeView || activeView.getComponent() !== "Results") {
+      console.warn(
+        "Failed to populate editor. No active view of type 'Results' selected"
+      );
+      return;
+    }
+
+    // Create editor and get the instance
+    const editor = addView("Editor");
+    // const instance = getEditorInstance(activeView.getId());
+
+    // Get the query data from the sql editor store
+    const gridInstance = getDataGridInstance(gridId!);
+
+    if (!gridInstance) {
+      console.warn(
+        "Failed to populate editor. A grid instance could not be found"
+      );
+      return;
+    }
+    const editorRecord = store.getRow("editors", gridInstance.queryId!);
+
+    // Populate the editor
+    setSql({
+      sql: editorRecord.sql as string,
+      viewId: editor!.getId(),
+    });
+    setDatabase({
+      database: editorRecord.database as string,
+      viewId: editor!.getId(),
+    });
+    setQueryId({
+      queryId: editorRecord.queryId as string,
+      viewId: editor!.getId(),
+    });
+  }
 
   return (
     <ShadMenubar className="border-none">
@@ -76,21 +127,80 @@ const Menubar = ({
             Configure Connection
           </MenubarItem>
           <MenubarSeparator />
-          <MenubarItem>Print</MenubarItem>
         </MenubarContent>
       </MenubarMenu>
 
       <MenubarMenu>
         <MenubarTrigger>Query</MenubarTrigger>
         <MenubarContent>
-          <MenubarItem>
-            New Tab <MenubarShortcut>⌘T</MenubarShortcut>
+          <MenubarItem onClick={() => addView("Editor")}>
+            <Plus />
+            New Query
           </MenubarItem>
-          <MenubarItem>New Window</MenubarItem>
+        </MenubarContent>
+      </MenubarMenu>
+      <MenubarMenu>
+        <MenubarTrigger>Results</MenubarTrigger>
+        <MenubarContent>
+          <MenubarSub>
+            <MenubarSubTrigger
+              disabled={
+                activeView ? activeView.getComponent() !== "Results" : true
+              }
+              className={
+                activeView
+                  ? activeView.getComponent() !== "Results"
+                    ? "text-muted-foreground cursor-not-allowed"
+                    : ""
+                  : "text-muted-foreground cursor-not-allowed"
+              }
+            >
+              <RefreshCcw className="w-[16px] mr-2" />
+              Sync
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <ScrollArea className="h-[200px]">
+                {Object.keys(queryIdNameMap).length < 1 ? (
+                  <MenubarItem>No Queries</MenubarItem>
+                ) : null}
+                {Object.keys(queryIdNameMap).map((key) => {
+                  return (
+                    <MenubarItem
+                      key={key}
+                      onClick={() => {
+                        setDataGridQueryId({
+                          viewId: activeView!.getId(),
+                          queryId: key,
+                        });
+                      }}
+                    >
+                      {queryIdNameMap[key]}
+                    </MenubarItem>
+                  );
+                })}
+              </ScrollArea>
+            </MenubarSubContent>
+          </MenubarSub>
           <MenubarSeparator />
-          <MenubarItem>Share</MenubarItem>
-          <MenubarSeparator />
-          <MenubarItem>Print</MenubarItem>
+          <MenubarItem
+            onClick={handlePopulateEditor}
+            disabled={
+              activeView
+                ? activeView.getComponent() !== "Results" ||
+                  !getDataGridInstance(activeView.getId())?.queryId
+                : true
+            }
+            className={
+              activeView
+                ? activeView.getComponent() !== "Results"
+                  ? "text-muted-foreground cursor-not-allowed"
+                  : ""
+                : "text-muted-foreground cursor-not-allowed"
+            }
+          >
+            <Code className="w-[16px] mr-2" />
+            Populate in Editor
+          </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>

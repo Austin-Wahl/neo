@@ -1,6 +1,8 @@
 "use client";
+import { NeoQueryServerResponse } from "@/app/(neo)/types/types";
+import store from "@/lib/tinybase";
 import { NeoRow } from "@/services/types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Cell,
   Column,
@@ -12,25 +14,52 @@ import {
 import "react-data-grid/lib/styles.css";
 
 const DataGrid = ({
-  fields,
-  rows,
-  fullScreen,
+  queryId,
 }: {
-  fields: Column<NeoRow>[];
-  rows: NeoRow[];
+  queryId: string;
   isNextPageLoading?: boolean;
   loadNextPage?: (startIndex: number, stopIndex: number) => Promise<void>;
   hasNextPage?: boolean;
-  fullScreen: boolean;
 }) => {
+  // State for data grid sorting and configuration
   const [selectedRows, setSelectedRows] = useState(
     (): ReadonlySet<string> => new Set()
   );
-
   const [sortColumns, setSortColumns] = useState<readonly SortColumn[]>([]);
   const [columnWidths, setColumnWidths] = useState(
     (): ColumnWidths => new Map()
   );
+
+  useEffect(() => {
+    const listenerId = store.addRowListener("result", queryId, (store) => {
+      const data = JSON.parse(
+        store.getCell("result", queryId, "data") as string
+      ) as NeoQueryServerResponse["result"];
+
+      setRows(data.rows as Array<NeoRow>);
+      setFields(data.fields as Column<NeoRow>[]);
+    });
+
+    return () => {
+      store.delListener(listenerId);
+    };
+  }, []);
+
+  // Rows and Columns
+  const [rows, setRows] = useState<Array<NeoRow>>([]);
+  const [fields, setFields] = useState<Column<NeoRow>[]>([]);
+
+  // Get the data from the tinybase sync layer
+  useEffect(() => {
+    const data = JSON.parse(
+      store.getCell("result", queryId, "data") as string
+    ) as NeoQueryServerResponse["result"];
+
+    setRows(data.rows as Array<NeoRow>);
+    setFields(data.fields as Column<NeoRow>[]);
+  }, [queryId]);
+
+  // Helper functions for sorting data
   const sortedRows = useMemo((): readonly NeoRow[] => {
     if (sortColumns.length === 0) return rows;
 
@@ -62,11 +91,7 @@ const DataGrid = ({
   }, [rows, sortColumns]);
 
   return (
-    <div
-      className={`w-full h-full bg-background ${
-        fullScreen ? "!absolute !z-[10] !w-full !left-0" : ""
-      }`}
-    >
+    <div className={`w-full h-full bg-background`}>
       <ReactDataGrid
         columnWidths={columnWidths ?? new Map()}
         onColumnWidthsChange={setColumnWidths}

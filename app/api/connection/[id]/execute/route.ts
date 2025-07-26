@@ -1,11 +1,12 @@
-import { APIResponse } from "@/app/(neo)/types/types";
+import { APIResponse, NeoQueryServerResponse } from "@/app/(neo)/types/types";
 import { getConnection } from "@/data-access/database-connection";
 import NeoConnection from "@/services/connection-service";
 import { NeoSqlError } from "@/services/types";
 import getServerSideSession from "@/utils/getServerSideSession";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { NextRequest, NextResponse } from "next/server";
-import { validate, v4 } from "uuid";
+import { v4, validate } from "uuid";
+import z from "zod";
 
 interface TestConnectionRouteParams {
   params: Promise<{
@@ -43,7 +44,7 @@ export const POST = async (
       );
     }
 
-    const body = await request.json();
+    const body: z.infer<typeof executeSqlSchema> = await request.json();
     const validation = executeSqlSchema.safeParse(body);
 
     if (!validation.success) {
@@ -116,15 +117,9 @@ export const POST = async (
           message: "Query executed successfully!",
           data: {
             result: results,
-            queryId: v4(),
+            queryId: body.queryId ? body.queryId : v4(),
           },
-        } as APIResponse<{
-          result: {
-            fields: unknown[];
-            rows: unknown[];
-          };
-          queryId: string;
-        }>,
+        } as APIResponse<NeoQueryServerResponse>,
         { status: 200 }
       );
     } catch (error) {

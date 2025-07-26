@@ -23,7 +23,7 @@ import calculatePagination from "@/utils/calculate-pagination";
 import { useQuery } from "@tanstack/react-query";
 import { Plug, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
 
 const Navbar = ({
   projects,
@@ -40,13 +40,29 @@ const Navbar = ({
     ? connection.id
     : undefined;
   const queryLimit = connections.length;
-  const { getEditorInstance, setDatabase } = useSqlEditor();
-  const { getActiveView } = useStudioLayout();
+  const [database, setDatabase] = useState("");
+  const { getEditorInstance, setDatabase: setDB } = useSqlEditor();
+  const { activeView } = useStudioLayout();
 
-  // Get the active database if there is one
-  // Get the activeViewId first
-  const activeViewId = getActiveView()?.getId();
-  const editorInstance = getEditorInstance(activeViewId);
+  // Check for active view; get Id; check for database
+  useEffect(() => {
+    const viewId = activeView?.getId();
+    if (viewId) {
+      const editorInstance = getEditorInstance(viewId);
+      setDatabase(editorInstance?.database || "");
+    }
+  }, [activeView, getEditorInstance]);
+
+  const handleDbReset = () => {
+    const viewId = activeView?.getId();
+    if (viewId) {
+      setDatabase("");
+      setDB({
+        database: "",
+        viewId: activeView!.getId(),
+      });
+    }
+  };
 
   const router = useRouter();
 
@@ -110,18 +126,17 @@ const Navbar = ({
           connection={connection}
         />
       </div>
-      {editorInstance?.database && (
+      {database && (
         <div className="rounded-lg border flex items-center text-xs justify-between gap-4 overflow-hidden">
           <div className="p-2 flex items-center gap-2">
             <Plug size={12} />
-            <p>{editorInstance?.database}</p>
+            <p>{database}</p>
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 onClick={() => {
-                  setDatabase({ viewId: editorInstance.viewId, database: "" });
-                  toast("No Database is selected.");
+                  handleDbReset();
                 }}
                 className="!bg-background hover:bg-accent rounded-none border-l-[1px] border-border cursor-pointer hover:text-primary text-muted-foreground"
               >

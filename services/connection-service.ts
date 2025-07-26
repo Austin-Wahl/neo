@@ -1,5 +1,5 @@
 import { DatabaseTypes } from "@/prisma/generated/prisma";
-import { MySQLAdapter } from "@/services/adapters/mysql";
+// import { MySQLAdapter } from "@/services/adapters/mysql";
 import { PostgresAdapter } from "@/services/adapters/postgres";
 import { NeoAdapter, NeoConnectionOptions } from "@/services/types";
 import { createDatabaseConnectionSchema } from "@/validation-schemas/connection";
@@ -54,7 +54,7 @@ class NeoConnection {
 
       switch (databaseProvider) {
         case "MySQL":
-          const mysqlConnection = new MySQLAdapter({
+          const mysqlConnection = new PostgresAdapter({
             provider: data.databaseProvider as DatabaseTypes,
             connectionOptions: connectionOptions,
             ssl: data.ssl,

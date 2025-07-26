@@ -1,9 +1,6 @@
-/**
- * Due to extremly poor project planning, this file has become a mess during the prototyping stage of development.
- * It will likely remain this way until the project becomes stable
- */
 "use client";
 import useStudioLayout from "@/hooks/use-studio-layout";
+import { View } from "@/providers/studio-layout-provider";
 import {
   createContext,
   ReactNode,
@@ -14,9 +11,10 @@ import {
 } from "react";
 
 interface SqlEditorContextProps {
-  editorInstances: Array<EditorInstance>;
-  getEditorInstance: (viewId?: string) => EditorInstance | undefined;
-  getEditorInstanceOrForceCreate: (viewId?: string) => EditorInstance;
+  editorInstances: Record<string, EditorInstance>;
+  createInstance: (viewId: string) => EditorInstance;
+  getEditorInstance: (viewId: string) => EditorInstance | undefined;
+  getEditorInstanceOrForceCreate: (viewId: string) => EditorInstance;
   setSql: ({ viewId, sql }: { viewId: string; sql: string }) => void;
   setDatabase: ({
     viewId,
@@ -34,7 +32,7 @@ interface SqlEditorContextProps {
   }) => void;
 }
 
-interface EditorInstance {
+export interface EditorInstance {
   viewId: string;
   queryId?: string;
   sql: string;
@@ -42,13 +40,13 @@ interface EditorInstance {
 }
 
 export const sqlEditorContext = createContext<SqlEditorContextProps>({
-  editorInstances: [],
+  editorInstances: {},
+  createInstance: () => {
+    return { sql: "", database: "", viewId: "", queryId: "" };
+  },
   getEditorInstance: () => undefined,
   getEditorInstanceOrForceCreate: () => {
-    return {
-      sql: "",
-      viewId: "",
-    };
+    return { sql: "", viewId: "" };
   },
   setSql: () => undefined,
   setDatabase: () => undefined,
@@ -56,70 +54,108 @@ export const sqlEditorContext = createContext<SqlEditorContextProps>({
 });
 
 const SqlEditorProvider = ({ children }: { children: ReactNode }) => {
-  const { addView, activeViews, removeView } = useStudioLayout();
+  const { openViews } = useStudioLayout();
+  const [editorInstances, setEditorInstances] = useState<
+    Record<string, EditorInstance>
+  >({});
+  const editorInstancesRef = useRef<Record<string, EditorInstance>>({});
 
-  // State
-  const [editorInstances, setEditorInstances] = useState<Array<EditorInstance>>(
-    []
-  );
+  // Sync editorInstancesRef with editorInstances state
+  useEffect(() => {
+    editorInstancesRef.current = editorInstances;
+  }, [editorInstances]);
 
-  // Refs
-  const editorInstancesRef = useRef<Array<EditorInstance>>([]);
-  editorInstancesRef.current = editorInstances;
+  // Sync editorInstances with openViews
+  useEffect(() => {
+    const updatedInstances: Record<string, EditorInstance> = {
+      ...editorInstancesRef.current,
+    };
 
-  // Helper Functions for API
-  /**
-   * Gets the active editor instance if one exists.
-   */
+    // Iterate over openViews to ensure all open editors are in editorInstances
+    openViews.forEach((view) => {
+      const viewId = view.getId();
+      const component = view.getComponent() as View;
+
+      // If the view is an Editor and doesn't already exist, create a new instance
+      if (component === "Editor" && !updatedInstances[viewId]) {
+        updatedInstances[viewId] = {
+          sql: "",
+          viewId,
+          database: "",
+          queryId: "",
+        };
+      }
+    });
+
+    // Filter out instances that are no longer in openViews
+    const openInstances: Record<string, EditorInstance> = {};
+    openViews.forEach((view) => {
+      const viewId = view.getId();
+      const component = view.getComponent() as View;
+
+      if (component === "Editor" && updatedInstances[viewId]) {
+        openInstances[viewId] = updatedInstances[viewId];
+      }
+    });
+
+    // Update the state and ref
+    editorInstancesRef.current = openInstances;
+    setEditorInstances(openInstances);
+  }, [openViews]);
+
+  // Function to create an editor instance
+  function createInstance(viewId: string): EditorInstance {
+    const schema: EditorInstance = {
+      sql: "",
+      viewId,
+      database: "",
+      queryId: "",
+    };
+
+    // Update both state and ref immediately
+    const updatedInstances = {
+      ...editorInstancesRef.current,
+      [viewId]: schema,
+    };
+    editorInstancesRef.current = updatedInstances;
+    setEditorInstances(updatedInstances);
+
+    return schema;
+  }
+
+  // Function to get an editor instance
   const getEditorInstance = useCallback(
-    (viewId?: string): EditorInstance | undefined => {
-      return editorInstancesRef.current.find(
-        (instance) => instance.viewId === viewId
-      );
+    (viewId: string): EditorInstance | undefined => {
+      return editorInstancesRef.current[viewId];
     },
     []
   );
 
-  /**
-   * Gets the active editor instance or creates one if none exists.
-   */
-  function getEditorInstanceOrForceCreate(viewId?: string): EditorInstance {
-    const activeInstance = getEditorInstance(viewId);
-
-    if (!activeInstance) {
-      const newViewId = addView("Editor");
-      const newInstance: EditorInstance = {
-        sql: "",
-        viewId: newViewId,
-        database: "",
-      };
-
-      // Update state and ref
-      setEditorInstances((prev) => [...prev, newInstance]);
-      editorInstancesRef.current.push(newInstance);
-
-      return newInstance;
+  // Function to get or create an editor instance
+  function getEditorInstanceOrForceCreate(viewId: string): EditorInstance {
+    const existingInstance = getEditorInstance(viewId);
+    if (existingInstance) {
+      return existingInstance;
     }
 
-    return activeInstance;
+    return createInstance(viewId);
   }
 
-  /**
-   * Updates the SQL for a specific editor instance.
-   */
+  // Function to update the SQL for an editor instance
   function setSql({ viewId, sql }: { viewId: string; sql: string }) {
-    setEditorInstances((prev) =>
-      prev.map((editorInstance) =>
-        editorInstance.viewId === viewId
-          ? { ...editorInstance, sql }
-          : editorInstance
-      )
-    );
+    const updatedInstances = {
+      ...editorInstancesRef.current,
+      [viewId]: {
+        ...editorInstancesRef.current[viewId],
+        sql,
+      },
+    };
+
+    editorInstancesRef.current = updatedInstances;
+    setEditorInstances(updatedInstances);
   }
 
-  /**
-   * Updates the database for a specific editor instance.
-   */
+  // Function to update the database for an editor instance
   function setDatabase({
     viewId,
     database,
@@ -127,18 +163,19 @@ const SqlEditorProvider = ({ children }: { children: ReactNode }) => {
     viewId: string;
     database: string;
   }) {
-    setEditorInstances((prev) =>
-      prev.map((editorInstance) =>
-        editorInstance.viewId === viewId
-          ? { ...editorInstance, database }
-          : editorInstance
-      )
-    );
+    const updatedInstances = {
+      ...editorInstancesRef.current,
+      [viewId]: {
+        ...editorInstancesRef.current[viewId],
+        database,
+      },
+    };
+
+    editorInstancesRef.current = updatedInstances;
+    setEditorInstances(updatedInstances);
   }
 
-  /**
-   * Updates the query ID for a specific editor instance.
-   */
+  // Function to update the query ID for an editor instance
   function setQueryId({
     viewId,
     queryId,
@@ -146,52 +183,23 @@ const SqlEditorProvider = ({ children }: { children: ReactNode }) => {
     viewId: string;
     queryId: string;
   }) {
-    setEditorInstances((prev) =>
-      prev.map((editorInstance) =>
-        editorInstance.viewId === viewId
-          ? { ...editorInstance, queryId }
-          : editorInstance
-      )
-    );
+    const updatedInstances = {
+      ...editorInstancesRef.current,
+      [viewId]: {
+        ...editorInstancesRef.current[viewId],
+        queryId,
+      },
+    };
+
+    editorInstancesRef.current = updatedInstances;
+    setEditorInstances(updatedInstances);
   }
-
-  useEffect(() => {
-    // Add new views to editorInstances
-    Object.keys(activeViews).forEach((viewId) => {
-      const typeOfView = activeViews[viewId];
-
-      if (typeOfView === "Editor" && !getEditorInstance(viewId)) {
-        const newInstance: EditorInstance = { viewId, sql: "", database: "" };
-
-        // Update state and ref
-        setEditorInstances((prev) => [...prev, newInstance]);
-        editorInstancesRef.current.push(newInstance);
-      }
-    });
-
-    // Remove old views from editorInstances
-    editorInstancesRef.current.forEach((instance) => {
-      if (!activeViews[instance.viewId]) {
-        // Remove the view if it no longer exists in activeViews
-        removeView(instance.viewId);
-
-        // Update state and ref
-        setEditorInstances((prev) =>
-          prev.filter(
-            (editorInstance) => editorInstance.viewId !== instance.viewId
-          )
-        );
-        editorInstancesRef.current = editorInstancesRef.current.filter(
-          (editorInstance) => editorInstance.viewId !== instance.viewId
-        );
-      }
-    });
-  }, [activeViews, getEditorInstance, removeView]);
 
   return (
     <sqlEditorContext.Provider
       value={{
-        editorInstances,
+        editorInstances: editorInstances,
+        createInstance,
         getEditorInstance,
         getEditorInstanceOrForceCreate,
         setSql,

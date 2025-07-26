@@ -19,3 +19,11 @@ export interface Pagination {
     totalRecords: number;
   };
 }
+
+export interface NeoQueryServerResponse {
+  result: {
+    fields: unknown[];
+    rows: unknown[];
+  };
+  queryId: string;
+}

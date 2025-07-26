@@ -1,52 +1,142 @@
 "use client";
-import { APIResponse } from "@/app/(neo)/types/types";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { APIResponse, NeoQueryServerResponse } from "@/app/(neo)/types/types";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
+import useResultsStore from "@/hooks/use-results-store";
 import useSqlEditor from "@/hooks/use-sql-editor";
-import useStudioLayout from "@/hooks/use-studio-layout";
-import { NeoRow, NeoSqlError } from "@/services/types";
+import store from "@/lib/tinybase";
+import { NeoSqlError } from "@/services/types";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { Editor } from "@monaco-editor/react";
-import { AlertCircle } from "lucide-react";
+import { Cog, Play, RotateCcw, Save, StopCircle, Terminal } from "lucide-react";
 import React, {
   Dispatch,
+  ReactNode,
   SetStateAction,
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
-import { Column } from "react-data-grid";
 import { PuffLoader } from "react-spinners";
 import { toast } from "sonner";
 
 const SQLEditor = ({
   connection,
   setRequestState,
-  setData,
+  // setData,
+  viewId,
   ...props
 }: {
   connection: DatabaseConnectionWithConnectionDetails;
   setRequestState: Dispatch<
     SetStateAction<"loading" | "loaded" | "error" | null>
   >;
-  setData: Dispatch<
-    SetStateAction<APIResponse<{
-      result: {
-        fields: Column<NeoRow>[];
-        rows: NeoRow[];
-      };
-    }> | null>
-  >;
+  viewId: string;
 } & React.ComponentProps<"div">) => {
-  const { getActiveView, activeViews, activeView } = useStudioLayout();
-  const { getEditorInstance, editorInstances } = useSqlEditor();
+  const { getEditorInstance, setSql, createInstance, editorInstances } =
+    useSqlEditor();
   const [code, setCode] = useState<string | undefined>("");
-  const [init, setInit] = useState(false);
+  // const [, setInit] = useState(false);
   const [database, setDatabase] = useState<string | undefined>("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [, setError] = useState("");
+  const { calculateDefaultQueryName } = useResultsStore();
+  const [queryName, setQueryName] = useState<undefined | string>(undefined);
+  const queryId = useRef<undefined | string>(undefined);
 
+  // When the editor loads, check for an instance; if one doesnt exist, create it
+  // Also set the default queryName
+  useEffect(() => {
+    let editorInstance = getEditorInstance(viewId);
+    if (!editorInstance) {
+      editorInstance = createInstance(viewId);
+    }
+
+    setCode(editorInstance?.sql);
+    setDatabase(editorInstance?.database);
+    queryId.current = editorInstance?.queryId;
+
+    if (queryId.current) {
+      setQueryName(
+        store.getCell("result", queryId.current!, "queryName") as string
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    const editorInstance = getEditorInstance(viewId);
+    if (editorInstance) {
+      setDatabase(editorInstance?.database);
+      setCode(editorInstance?.sql);
+    }
+  }, [editorInstances]);
+
+  // Apply changes to the Store. This keeps all editors in sync with eachother
+  useEffect(() => {
+    if (!queryId.current) return;
+    store.setCell("editors", queryId.current!, "sql", code || "");
+  }, [code]);
+
+  useEffect(() => {
+    if (!queryId.current) return;
+    store.setCell("editors", queryId.current!, "database", database || "");
+  }, [database]);
+
+  // Add change listener
+  useEffect(() => {
+    if (!queryId.current) return;
+    const id = store.addRowListener("editors", queryId.current!, (store) => {
+      const sqlCell = store.getCell("editors", queryId.current!, "sql");
+      const databaseCell = store.getCell(
+        "editors",
+        queryId.current!,
+        "database"
+      );
+
+      if (code !== sqlCell) {
+        setCode(sqlCell as string);
+      }
+
+      if (database !== databaseCell) {
+        setDatabase(databaseCell as string);
+      }
+    });
+
+    return () => {
+      store.delListener(id);
+    };
+  }, []);
+
+  // Listen for changes in the SQL and save it to the editor instance
+  useEffect(() => {
+    // Get the current editor instance
+    const editorInstance = getEditorInstance(viewId);
+
+    if (editorInstance && !editorInstance.sql) {
+      editorInstance.sql = code || "";
+
+      setSql({
+        viewId,
+        sql: code || "",
+      });
+    }
+  }, [code]);
+
+  // Main function for handeling the query execution
+  // This function is also responsible for syncing data to the Editors and Results Sync Layer
   const handleExecute = useCallback(async () => {
     try {
       setLoading(true);
@@ -65,17 +155,33 @@ const SQLEditor = ({
         body: JSON.stringify({
           sql: code,
           database,
+          ...(queryId.current ? { queryId: queryId.current } : null),
         }),
       });
 
-      const body = await response.json();
+      const body: APIResponse<NeoQueryServerResponse> = await response.json();
       if (!response.ok) {
         throw body;
       }
 
-      if (setData !== undefined) {
-        setData(body);
-      }
+      queryId.current = body.data!.queryId;
+
+      // Add editor data to the store
+      store.setRow("editors", queryId.current, {
+        sql: code || "",
+        lastRunSql: code || "",
+        database: database || "",
+        queryId: queryId.current,
+      });
+
+      // Add results to store
+      const _queryName = queryName || calculateDefaultQueryName();
+      store.setRow("result", queryId.current, {
+        queryId: queryId.current,
+        queryName: _queryName,
+        data: JSON.stringify(body.data!.result),
+      });
+      setQueryName(_queryName);
       setRequestState("loaded");
     } catch (error) {
       console.log(error);
@@ -94,66 +200,174 @@ const SQLEditor = ({
     } finally {
       setLoading(false);
     }
-  }, [code, connection.id, database, setData, setRequestState]);
+  }, [code, connection.id, database, setRequestState]);
 
   const handleReset = () => {
-    setInit(false);
     setLoading(false);
     setRequestState(null);
-    setCode("");
+
+    if (queryId.current) {
+      const row = store.getRow("editors", queryId.current);
+      store.setRow("editors", queryId.current, {
+        ...row,
+        sql: row.lastRunSql,
+      });
+      setCode(row.lastRunSql as string);
+    } else {
+      setCode("");
+    }
+
     setError("");
   };
 
-  useEffect(() => {
-    if (init) return;
+  const handleNameChange = (value: string) => {
+    setQueryName(value);
+  };
 
-    const editorInstance = getEditorInstance(getActiveView()!.getId());
-    const sql = editorInstance?.sql;
-
-    setDatabase(editorInstance?.database);
-    setCode(sql);
-  }, [editorInstances, getActiveView, getEditorInstance, init]);
-
-  useEffect(() => {
-    console.log("the open view is", activeView);
-  }, [activeView]);
+  // Saving is handled mostly automatically. This function allows the user
+  // to override the default saving procedure with their own data
+  const handleSave = () => {
+    if (queryId.current) {
+      store.setCell(
+        "result",
+        queryId.current,
+        "queryName",
+        queryName || "No Name"
+      );
+    }
+  };
 
   return (
     <div {...props}>
-      <div className="flex items-center justify-between border-b p-1">
-        <div>
-          <Button variant="outline" onClick={() => handleReset}>
-            Reset
-          </Button>
+      <div className="h-full w-full">
+        {/* Options Bar */}
+        <div className="w-full h-[38px] p-1 flex items-center gap-2 justify-between overflow-x-auto">
+          {/* 
+            Reset Query
+            View Query Options [name, id, database]
+            Toggle Log
+            Run query
+            Stop query
+            Open Results
+            Save Query
+          */}
+          <div className="h-full flex gap-2 items-center">
+            <OptionButton
+              text="Reset Query"
+              trigger={
+                <Button variant={"ghost"} size="sm" onClick={handleReset}>
+                  <RotateCcw className="!w-[14px]" />
+                </Button>
+              }
+            />
+
+            <Separator orientation="vertical" />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant={"ghost"} size="sm">
+                  <Cog className="!w-[14px]" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm">Query Name</p>
+                  <Input
+                    placeholder="Query Name"
+                    defaultValue={queryName}
+                    onChange={(v) => handleNameChange(v.target.value)}
+                    type="text"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <Separator orientation="vertical" />
+            <OptionButton
+              text="View Log"
+              trigger={
+                <Button variant={"ghost"} size="sm">
+                  <Terminal className="!w-[14px]" />
+                </Button>
+              }
+            />
+          </div>
+          <div className="h-full flex gap-2 items-center">
+            <OptionButton
+              text="Save Query"
+              trigger={
+                <Button variant={"ghost"} size="sm" onClick={handleSave}>
+                  <Save className="!w-[14px]" />
+                </Button>
+              }
+            />
+            <Separator orientation="vertical" />
+            <OptionButton
+              text="Stop"
+              trigger={
+                <Button variant={"destructive"} size="sm" disabled={true}>
+                  <StopCircle className="!w-[14px]" />
+                </Button>
+              }
+            />
+            <Separator orientation="vertical" />
+            <OptionButton
+              trigger={
+                <Button
+                  variant={"default"}
+                  size="sm"
+                  className="text-[12px]"
+                  disabled={loading || !code}
+                  onClick={handleExecute}
+                >
+                  {loading ? (
+                    <PuffLoader size={14} />
+                  ) : (
+                    <Play className="!w-[14px]" />
+                  )}{" "}
+                  Run
+                </Button>
+              }
+            />
+          </div>
         </div>
-        <Button disabled={!code || loading} onClick={handleExecute}>
-          {loading && <PuffLoader size={16} />}Execute
-        </Button>
+        {/* Editor */}
+        <div className={`h-[calc(100%-38px)] w-full`}>
+          <Editor
+            className={`!flex-1 min-h-[300px]`}
+            defaultLanguage="sql"
+            defaultValue={""}
+            onChange={setCode}
+            theme="vs-dark"
+            value={code}
+            loading={"Initializing"}
+            options={{
+              minimap: {
+                enabled: true,
+              },
+            }}
+          />
+        </div>
       </div>
-      {error && (
-        <div className="w-full p-4">
-          <Alert variant="destructive">
-            <AlertCircle />
-            <AlertTitle>Query failed!</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        </div>
-      )}
-      <Editor
-        className={`!flex-1 min-h-[300px]`}
-        defaultLanguage="sql"
-        defaultValue=""
-        onChange={setCode}
-        theme="vs-dark"
-        value={code}
-        loading={"Initializing"}
-        options={{
-          minimap: {
-            enabled: true,
-          },
-        }}
-      />
     </div>
+  );
+};
+
+const OptionButton = ({
+  text,
+  trigger,
+}: {
+  text?: string;
+  trigger: ReactNode;
+}) => {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild={true}>{trigger}</TooltipTrigger>
+      {text && (
+        <TooltipContent>
+          <p>{text}</p>
+        </TooltipContent>
+      )}
+    </Tooltip>
   );
 };
 
