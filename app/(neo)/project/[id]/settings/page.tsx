@@ -1,13 +1,13 @@
 import AccessDenied from "@/components/custom/access-denied/access-denied";
 import ChangeIconModal from "@/components/custom/change-icon-modal/change-icon-modal";
+import DeleteProjectSettingsCard from "@/components/custom/delete-project-settings-card/delete-project-settings-card";
 import ProjectSettingsForm from "@/components/custom/settings-project-form/settings-project-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { getProject } from "@/data-access/project";
 import { Project } from "@/prisma/generated/prisma";
 import getServerSideSession from "@/utils/getServerSideSession";
-import { AlertCircle, Clock, IdCard, Plug, Trash } from "lucide-react";
+import { AlertCircle, Clock, IdCard, Plug } from "lucide-react";
 import { redirect } from "next/navigation";
 import { validate } from "uuid";
 
@@ -84,24 +84,7 @@ const SettingsPage = async (props: PageProps) => {
         </div>
       </div>
       <Separator orientation="horizontal" />
-      <div className="flex flex-col gap-4">
-        <p className="text-destructive text-2xl">Danger Zone</p>
-        <div className="rounded-lg border bg-card p-4 flex flex-col gap-2 sm:justify-between sm:flex-row sm:items-center">
-          <div>
-            <p>Delete Project</p>
-            <p className="text-sm text-muted-foreground">
-              Deleting your Project will remove all Connections and Project
-              data.
-            </p>
-          </div>
-          <div>
-            <Button variant="destructive">
-              <Trash />
-              Delete Project
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DeleteProjectSettingsCard projectId={project.id} />
     </div>
   );
 };

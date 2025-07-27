@@ -49,6 +49,20 @@ const ProjectLayout = async (props: LayoutProps) => {
     );
   }
 
+  if (!project) {
+    return (
+      <div className="m-4">
+        <Alert variant="destructive">
+          <AlertCircle />
+          <AlertTitle>No Project Found</AlertTitle>
+          <AlertDescription>
+            Sorry! A Project couldn&apos;t be found with the provided ID!
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   // Make sure the user has access to this project
   const hasAccess = project?.ownerId === session.user.id;
   if (!hasAccess) {
