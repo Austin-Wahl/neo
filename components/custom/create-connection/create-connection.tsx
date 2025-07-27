@@ -112,7 +112,6 @@ const CreateConnection = ({
     password: 2,
     port: 2,
     username: 2,
-    database: 2,
   };
 
   const form = useForm<CreateConnectionSchemaProps>({
@@ -125,7 +124,6 @@ const CreateConnection = ({
       port: "5432",
       ssl: true,
       username: "",
-      database: "",
     },
   });
 
@@ -346,22 +344,6 @@ const CreateConnectionForm = ({
           />
           <FormField
             control={form.control}
-            name="database"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Database</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormDescription>
-                  Specify the database to connect to.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
             name="password"
             render={({ field }) => (
               <FormItem>
@@ -415,13 +397,6 @@ const CreateConnectionForm = ({
                 <p className="text-sm">
                   <span className="text-muted-foreground">Username: </span>
                   {form.getValues("username")}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <User size={16} className="text-muted-foreground" />
-                <p className="text-sm">
-                  <span className="text-muted-foreground">Database: </span>
-                  {form.getValues("database")}
                 </p>
               </div>
               <div className="flex items-center gap-2">

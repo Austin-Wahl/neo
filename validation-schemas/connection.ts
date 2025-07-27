@@ -28,7 +28,6 @@ export const createDatabaseConnectionSchema = z.object({
   ssl: z.boolean(),
   username: z.string(),
   password: z.string(),
-  database: z.string().optional(),
   databaseProvider: z.enum(databaseProviders as [string, ...string[]]),
 });
 export const executeSqlSchema = z.object({
