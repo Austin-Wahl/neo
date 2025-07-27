@@ -44,9 +44,9 @@ const Studio = ({
       return <ResultsView requestState={requestState} viewId={componentId} />;
     }
 
-    if (component === "Random") {
+    if (component === "Debug") {
       return (
-        <div>
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => {
               addView("Editor");

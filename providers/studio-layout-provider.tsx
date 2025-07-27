@@ -45,8 +45,8 @@ const defaultModelJson: IJsonModel = {
             children: [
               {
                 type: "tab",
-                name: "Random",
-                component: "Random",
+                name: "Debug",
+                component: "Debug",
               },
             ],
           },
