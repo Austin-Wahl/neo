@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import useDeleteProject from "@/hooks/use-delete-project";
 import { Project } from "@/prisma/generated/prisma";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import { Folder, MoreHorizontal, Trash } from "lucide-react";
+import { Folder, MoreHorizontal, Settings, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PuffLoader } from "react-spinners";
 
@@ -101,6 +101,16 @@ export default function ProjectCard({
                   >
                     <Folder />
                     Open Project
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => {
+                      window.location.href = `/project/${id}/settings`;
+                    }}
+                  >
+                    <Settings />
+                    Open Settings
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
