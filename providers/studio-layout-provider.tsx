@@ -23,10 +23,17 @@ interface StudioLayout {
   activeView: TabNode | null;
   openViews: Array<TabNode>;
   layoutRef: RefObject<Layout | null> | null;
-  addView: (viewType: View) => TabNode | undefined;
+  addView: (
+    viewType: View,
+    config?: Record<string, unknown>
+  ) => TabNode | undefined;
+  updateViewConfig: (
+    viewId: string,
+    config: Record<string, unknown>
+  ) => TabNode | undefined;
 }
 
-export type View = "Editor" | "Results" | "Scratchpad" | "Graph";
+export type View = "Editor" | "Results" | "Scratchpad" | "Graph" | "Debug";
 
 const defaultModelJson: IJsonModel = {
   global: {},
@@ -39,17 +46,6 @@ const defaultModelJson: IJsonModel = {
         type: "row",
         weight: 30,
         children: [
-          {
-            type: "tabset",
-            weight: 50,
-            children: [
-              {
-                type: "tab",
-                name: "Debug",
-                component: "Debug",
-              },
-            ],
-          },
           {
             type: "tabset",
             weight: 50,
@@ -84,6 +80,7 @@ export const StudioLayoutContext = createContext<StudioLayout>({
   openViews: [],
   layoutRef: null,
   addView: () => undefined,
+  updateViewConfig: () => undefined,
 });
 
 const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
@@ -174,6 +171,7 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleModelChange = (action: Action) => {
+      console.warn("CHANGE IN LAYOUT");
       const updatedModelJson = model.toJson();
       save(Model.fromJson(updatedModelJson));
     };
@@ -208,11 +206,11 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
   }
 
   // Listen for changes in model and apply them to LS
-  useEffect(() => {
-    if (model) {
-      save(model);
-    }
-  }, [model]);
+  // useEffect(() => {
+  //   if (model) {
+  //     save(model);
+  //   }
+  // }, [model]);
 
   // On load
   useEffect(() => {
@@ -232,8 +230,12 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
   /**
    * Adds a new view to the currently selected tabset
    * @param viewType Type of view
+   * @param config Extra data for a view
    */
-  function addView(viewType: View): TabNode | undefined {
+  function addView(
+    viewType: View,
+    config?: Record<string, unknown>
+  ): TabNode | undefined {
     try {
       if (!layoutRef.current) {
         throw new Error("Layout Ref does not exist");
@@ -271,6 +273,7 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
                 id: newTabId,
                 name: viewType,
                 component: viewType,
+                config,
               },
             ],
           };
@@ -295,11 +298,43 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
       const newTab = layoutRef.current.addTabToActiveTabSet({
         component: viewType,
         name: viewType,
+        config,
       });
 
       return newTab;
     } catch (error) {
       console.error(`Failed to get or create View of type ${viewType}`, error);
+    }
+  }
+
+  function updateViewConfig(viewId: string, config: Record<string, unknown>) {
+    try {
+      if (!layoutRef.current) {
+        throw new Error("Layout Ref does not exist");
+      }
+
+      // Get the view with view ID
+      const activeView = model.getNodeById(viewId) as TabNode;
+      if (!activeView) {
+        console.warn("Failed to update view config. This view does not exist.");
+        return undefined;
+      }
+
+      // Update the activeViewConfig
+      model.doAction(
+        Actions.updateModelAttributes({
+          config,
+        })
+      );
+
+      console.log(model.getNodeById(viewId));
+      // Return the newly created tab
+      return model.getNodeById(viewId) as TabNode;
+    } catch (error) {
+      console.error(
+        `Failed to update the config for View with view ID ${viewId}`,
+        error
+      );
     }
   }
   return (
@@ -310,6 +345,7 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
         openViews: openViewRef.current,
         layoutRef,
         addView,
+        updateViewConfig,
       }}
     >
       {children}

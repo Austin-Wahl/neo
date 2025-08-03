@@ -146,7 +146,7 @@ export const PATCH = async (
       return NextResponse.json(
         {
           message: "This connection does not exist.",
-          error: "A project with the provided UUID could not be found.",
+          error: "A connection with the provided UUID could not be found.",
         } as APIResponse,
         { status: 404 }
       );

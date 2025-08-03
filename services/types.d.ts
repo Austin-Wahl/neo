@@ -1,6 +1,14 @@
 import { DatabaseTypes } from "@/prisma/generated/prisma";
 import PG from "pg";
 import { type Column } from "react-data-grid";
+
+export interface NeoQueryResponse {
+  rows: NeoRow[];
+  fields: Column<NeoRow>[];
+  metadata: {
+    queryTime: number;
+  };
+}
 export interface NeoAdapter {
   /**
    * Executes a database query.
@@ -8,10 +16,7 @@ export interface NeoAdapter {
    * @param params - Optional parameters for the query.
    * @returns A Promise resolving to an array of rows.
    */
-  query(
-    sql: string,
-    params?: unknown[]
-  ): Promise<{ rows: NeoRow[]; fields: Column<NeoRow>[] }>;
+  query(sql: string, params?: unknown[]): Promise<NeoQueryResponse>;
 
   /**
    * Begins a database transaction.

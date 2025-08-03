@@ -3,6 +3,7 @@ import {
   DatabaseConnectionConfig,
   DbTransactionClient,
   NeoAdapter,
+  NeoQueryResponse,
   NeoRow,
   NeoSqlError,
 } from "@/services/types";
@@ -75,13 +76,12 @@ export class PostgresAdapter implements NeoAdapter {
     });
   }
 
-  async query(
-    sql: string,
-    params?: unknown[]
-  ): Promise<{ rows: NeoRow[]; fields: Column<NeoRow>[] }> {
+  async query(sql: string, params?: unknown[]): Promise<NeoQueryResponse> {
+    const start = Date.now();
     const client = await this.pool.connect(); // Get a client from the pool
     try {
       const res = await client.query(sql, params);
+      const queryTime = Date.now() - start; // Calculate duration
 
       // In the event their is more than one select statement, return the results for the last one
       if (Array.isArray(res)) {
@@ -112,6 +112,9 @@ export class PostgresAdapter implements NeoAdapter {
         return {
           fields,
           rows,
+          metadata: {
+            queryTime,
+          },
         };
       }
 
@@ -135,6 +138,9 @@ export class PostgresAdapter implements NeoAdapter {
       return {
         fields: fields,
         rows: rows,
+        metadata: {
+          queryTime,
+        },
       };
     } catch (error) {
       throw this._error(error as DatabaseError, sql);

@@ -18,6 +18,11 @@ store.setSchema({
     queryName: { type: "string" },
     queryId: { type: "string" },
     data: { type: "string" },
+    connectionId: { type: "string" },
+  },
+  logHistory: {
+    queryId: { type: "string" },
+    history: { type: "string" },
   },
 });
 

@@ -7,13 +7,7 @@ import { z } from "zod";
 
 type NeoConnectionInitProps = Pick<
   z.infer<typeof createDatabaseConnectionSchema>,
-  | "databaseProvider"
-  | "hostname"
-  | "password"
-  | "port"
-  | "ssl"
-  | "username"
-  | "database"
+  "databaseProvider" | "hostname" | "password" | "port" | "ssl" | "username"
 >;
 
 class NeoConnection {
@@ -49,7 +43,6 @@ class NeoConnection {
         password: data.password,
         port: Number(data.port),
         username: data.username,
-        database: data.database ?? "",
       };
 
       switch (databaseProvider) {

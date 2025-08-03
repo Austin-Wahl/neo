@@ -151,6 +151,7 @@ export const GET = async (
               },
             }
           : {}),
+        projectId: id,
       },
       orderBy: {
         [validatedParams.orderBy!]: validatedParams.sortDirection!,

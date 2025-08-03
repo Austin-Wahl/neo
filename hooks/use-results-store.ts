@@ -1,5 +1,6 @@
 import { NeoQueryServerResponse } from "@/app/(neo)/types/types";
 import store from "@/lib/tinybase";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Row } from "tinybase";
 
@@ -22,9 +23,18 @@ interface ResultProps {
   queryName: string;
   queryId: string;
   data: Stringified<NeoQueryServerResponse>;
+  connectionId: string;
 }
 
 const useResultsStore = (): UseResultsStore => {
+  // To keep a level of abstraction, just implement route params here
+  // Results store stores results with a connectionId to prevent results for x project/connection showing in y project/connection
+  const params = useParams();
+  const connectionId =
+    Array.isArray(params["connectionId"]) && params["connectionId"].length > 0
+      ? params["connectionId"][0]
+      : undefined;
+
   const [queryIdNameMap, setQueryIdNameMap] = useState<Record<string, string>>(
     {}
   );
@@ -37,8 +47,17 @@ const useResultsStore = (): UseResultsStore => {
       rowIds.forEach((rowId) => {
         const id = store.getCell("result", rowId, "queryId") as string;
         const name = store.getCell("result", rowId, "queryName") as string;
+        const _connectionId = store.getCell(
+          "result",
+          rowId,
+          "connectionId"
+        ) as string;
 
-        map[id] = name;
+        if (connectionId !== _connectionId) {
+          return;
+        } else {
+          map[id] = name;
+        }
       });
       setQueryIdNameMap(map);
     };
@@ -53,8 +72,17 @@ const useResultsStore = (): UseResultsStore => {
       rowIds.forEach((rowId) => {
         const id = store.getCell("result", rowId, "queryId") as string;
         const name = store.getCell("result", rowId, "queryName") as string;
+        const _connectionId = store.getCell(
+          "result",
+          rowId,
+          "connectionId"
+        ) as string;
 
-        map[id] = name;
+        if (connectionId !== _connectionId) {
+          return;
+        } else {
+          map[id] = name;
+        }
       });
       setQueryIdNameMap(map);
     });
@@ -80,10 +108,12 @@ const useResultsStore = (): UseResultsStore => {
       queryName: row.queryName as string,
       queryId: row.queryId as string,
       data: row.data as Stringified<NeoQueryServerResponse>,
+      connectionId: row.connectionId as string,
     };
     const updatedRow: ResultProps = {
       queryName: queryName ? queryName : resultProps.queryName,
       queryId,
+      connectionId: row.connectionId as string,
       data: result
         ? (JSON.stringify(result) as Stringified<NeoQueryServerResponse>)
         : resultProps.data,

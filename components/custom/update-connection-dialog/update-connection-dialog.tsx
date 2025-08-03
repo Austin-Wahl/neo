@@ -136,7 +136,6 @@ const UpdateConnectionDialog = ({
       await mutateAsync(onlyDirty(data));
 
       form.reset({
-        database: data.database,
         databaseProvider: data.databaseProvider,
         description: data.description,
         hostname: data.hostname,

@@ -87,8 +87,21 @@ model Project {
   updatedAt          DateTime             @updatedAt @db.Timestamptz()
   DatabaseConnection DatabaseConnection[]
   Connection         Connection[]
+  Icon               Icon?
 
   @@map("project")
+}
+
+model Icon {
+  id        String   @id @default(uuid())
+  projectId String   @unique
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fileKey   String
+  url       String
+  fileSize  Int
+  mimeType  String
+  createdAt DateTime @default(now()) @db.Timestamptz()
+  updatedAt DateTime @updatedAt @db.Timestamptz()
 }
 
 enum DatabaseTypes {

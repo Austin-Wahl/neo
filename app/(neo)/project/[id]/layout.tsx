@@ -80,7 +80,8 @@ const ProjectLayout = async (props: LayoutProps) => {
             </AvatarFallback>
             <AvatarImage
               src={project.icon}
-              style={{ borderRadius: "8px !important" }}
+              className="w-full h-full object-cover"
+              style={{ borderRadius: "8px" }}
             />
           </Avatar>
           <div className="max-w-[600px]">

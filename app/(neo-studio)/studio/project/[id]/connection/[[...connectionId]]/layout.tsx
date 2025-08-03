@@ -23,7 +23,7 @@ import { validate } from "uuid";
 export const metadata = {
   title: "Studio by NEO",
   description:
-    "Studio is NEO's attempt at providing users with a unified relational database query and management tool.",
+    "NEO Studio is a unified database management solution for relational databases.",
 };
 
 export default async function NoNavLayout({

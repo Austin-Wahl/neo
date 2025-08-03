@@ -62,6 +62,9 @@ export const POST = async (request: NextRequest) => {
       description: body.description || null,
       ownerId: session.user.id,
       icon: data!.ufsUrl,
+      fileKey: data!.key,
+      fileSize: data!.size,
+      mimeType: "image/png",
     });
 
     if (mutationError) {

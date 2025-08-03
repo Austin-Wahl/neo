@@ -1,7 +1,6 @@
 "use client";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -21,22 +20,69 @@ import {
   FileUploadList,
   FileUploadTrigger,
 } from "@/components/ui/file-upload";
+import useUpdateProjectIcon from "@/hooks/use-update-project-icon";
 import { Project } from "@/prisma/generated/prisma";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Upload, UploadIcon, X } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { PuffLoader } from "react-spinners";
+import { toast } from "sonner";
 
 const ChangeIconModal = ({ project }: { project: Project }) => {
   const [files, setFiles] = useState<Array<File>>([]);
-
-  const onFileValidate = () => {
-    return undefined;
+  const [error, setError] = useState("");
+  const [open, setOpen] = useState(false);
+  const { mutateAsync, status } = useUpdateProjectIcon({
+    projectId: project.id,
+  });
+  const UploadImage = async () => {
+    try {
+      await mutateAsync(files[0]);
+      setOpen(false);
+      setFiles([]);
+      setError("");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  const onFileReject = () => {};
+  const onFileValidate = useCallback(
+    (file: File): string | null | undefined => {
+      // Perform very basic validation. Actual validation is performed server side
+      setError("");
+      const allowedMimeTypes: Array<string> = [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+
+      if (file.size > 4 * 1024 * 1024) {
+        return "Files must be 4MB or less!";
+      }
+
+      if (!allowedMimeTypes.includes(file.type)) {
+        return "Image format not supported!";
+      }
+    },
+    [files]
+  );
+
+  const onFileReject = (file: File, error: string): void | undefined => {
+    setError(error);
+    toast(error, { dismissible: true });
+  };
   return (
-    <AlertDialog>
+    <AlertDialog
+      open={open}
+      onOpenChange={(open) => {
+        setOpen(open);
+        if (!open) {
+          setFiles([]);
+          setError("");
+        }
+      }}
+    >
       <AlertDialogTrigger>
         <div className="relative group w-[60px] h-[60px] overflow-hidden rounded-lg transition-all duration-100">
           <div className="absolute top-0 left-0 w-full h-full group group-hover:opacity-100 z-[10] flex items-center justify-center bg-[rgba(0,0,0,.5)] opacity-0">
@@ -48,7 +94,8 @@ const ChangeIconModal = ({ project }: { project: Project }) => {
             </AvatarFallback>
             <AvatarImage
               src={project.icon}
-              style={{ borderRadius: "8px !important" }}
+              className="w-full h-full object-cover"
+              style={{ borderRadius: "8px" }}
             />
           </Avatar>
         </div>
@@ -67,9 +114,10 @@ const ChangeIconModal = ({ project }: { project: Project }) => {
             onFileValidate={onFileValidate}
             onFileReject={onFileReject}
             accept="image/*"
-            maxFiles={2}
+            maxFiles={1}
             className="w-full"
             multiple={false}
+            onProgress={(event) => console.log(event.target)}
           >
             <FileUploadDropzone>
               <div className="flex flex-col items-center gap-1">
@@ -91,8 +139,9 @@ const ChangeIconModal = ({ project }: { project: Project }) => {
               {files.map((file) => (
                 <FileUploadItem key={file.name} value={file}>
                   <FileUploadItemPreview />
+                  {/* {status === "pending" &&< FileUploadItemProgress />} */}
                   <FileUploadItemMetadata />
-                  <FileUploadItemDelete asChild>
+                  <FileUploadItemDelete asChild disabled={status === "pending"}>
                     <Button variant="ghost" size="icon" className="size-7">
                       <X />
                     </Button>
@@ -101,10 +150,21 @@ const ChangeIconModal = ({ project }: { project: Project }) => {
               ))}
             </FileUploadList>
           </FileUpload>
+          <p className="text-destructive ml-auto mr-auto text-center italic mt-2 text-sm">
+            {error}
+          </p>
         </div>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction>Change</AlertDialogAction>
+          <AlertDialogCancel disabled={status === "pending"}>
+            Cancel
+          </AlertDialogCancel>
+          <Button
+            disabled={files.length < 1 || status === "pending"}
+            onClick={UploadImage}
+          >
+            {status === "pending" && <PuffLoader size={16} />}
+            Change
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

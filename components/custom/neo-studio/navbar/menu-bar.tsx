@@ -22,6 +22,7 @@ import { Project } from "@/prisma/generated/prisma";
 import { View } from "@/providers/studio-layout-provider";
 import {
   Book,
+  Bug,
   ChartArea,
   Code,
   Download,
@@ -47,6 +48,7 @@ const viewAndIcon: Record<
   Graph: ChartArea,
   Results: Table,
   Scratchpad: Notebook,
+  Debug: Bug,
 };
 const Menubar = ({
   connection,
@@ -208,6 +210,11 @@ const Menubar = ({
         <MenubarContent>
           {(Object.keys(viewAndIcon) as View[]).map((key, i) => {
             const Icon = viewAndIcon[key];
+            if (
+              key === "Debug" &&
+              process.env.NEXT_PUBLIC_NODE_ENV === "production"
+            )
+              return null;
             return (
               <MenubarItem key={i} onClick={() => addView(key)}>
                 <Icon /> {key}

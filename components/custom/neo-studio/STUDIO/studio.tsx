@@ -82,7 +82,13 @@ const Studio = ({
           >
             Log Tinybase Editor Store
           </Button>
-
+          <Button
+            onClick={() => {
+              console.log(store.getTable("logHistory"));
+            }}
+          >
+            Log Tinybase History Store
+          </Button>
           <Button
             onClick={() => {
               console.log(gridInstances);

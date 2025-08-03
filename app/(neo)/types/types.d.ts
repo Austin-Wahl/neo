@@ -1,5 +1,6 @@
 import { NeoSqlError } from "@/services/types";
 import { typeToFlattenedError } from "zod";
+import { NeoQueryResponse } from "@/services/types";
 
 export type APIResponse<T = unknown> = {
   message: string;
@@ -21,9 +22,6 @@ export interface Pagination {
 }
 
 export interface NeoQueryServerResponse {
-  result: {
-    fields: unknown[];
-    rows: unknown[];
-  };
+  result: NeoQueryResponse;
   queryId: string;
 }
