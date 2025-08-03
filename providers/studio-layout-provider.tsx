@@ -29,7 +29,8 @@ interface StudioLayout {
   ) => TabNode | undefined;
   updateViewConfig: (
     viewId: string,
-    config: Record<string, unknown>
+    config: Record<string, unknown>,
+    reset?: boolean
   ) => TabNode | undefined;
 }
 
@@ -307,28 +308,40 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  function updateViewConfig(viewId: string, config: Record<string, unknown>) {
+  const updateViewConfig = (
+    viewId: string,
+    config: Record<string, unknown>,
+    reset?: boolean
+  ) => {
     try {
+      console.log("Updating config");
       if (!layoutRef.current) {
         throw new Error("Layout Ref does not exist");
       }
 
-      // Get the view with view ID
       const activeView = model.getNodeById(viewId) as TabNode;
       if (!activeView) {
         console.warn("Failed to update view config. This view does not exist.");
         return undefined;
       }
 
-      // Update the activeViewConfig
-      model.doAction(
-        Actions.updateModelAttributes({
-          config,
-        })
-      );
+      if (reset) {
+        model.doAction(
+          Actions.updateNodeAttributes(viewId, {
+            config: { ...config },
+          })
+        );
+      } else {
+        model.doAction(
+          Actions.updateNodeAttributes(viewId, {
+            config: { ...activeView.getConfig(), ...config },
+          })
+        );
+      }
 
-      console.log(model.getNodeById(viewId));
-      // Return the newly created tab
+      setModel(model);
+
+      console.log("Updated view:", model.getNodeById(viewId));
       return model.getNodeById(viewId) as TabNode;
     } catch (error) {
       console.error(
@@ -336,7 +349,7 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
         error
       );
     }
-  }
+  };
   return (
     <StudioLayoutContext.Provider
       value={{

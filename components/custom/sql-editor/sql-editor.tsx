@@ -21,10 +21,12 @@ import {
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useResultsStore from "@/hooks/use-results-store";
 import useSqlEditor from "@/hooks/use-sql-editor";
+import useStudioLayout from "@/hooks/use-studio-layout";
 import store from "@/lib/tinybase";
 import { NeoSqlError } from "@/services/types";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { Editor } from "@monaco-editor/react";
+import { TabNode } from "flexlayout-react";
 import { Cog, Play, RotateCcw, Save, StopCircle, Terminal } from "lucide-react";
 import React, {
   Dispatch,
@@ -48,7 +50,6 @@ interface LogMessage {
 const SQLEditor = ({
   connection,
   setRequestState,
-  // setData,
   viewId,
   ...props
 }: {
@@ -60,8 +61,8 @@ const SQLEditor = ({
 } & React.ComponentProps<"div">) => {
   const { getEditorInstance, setSql, createInstance, editorInstances } =
     useSqlEditor();
+  const { model, updateViewConfig } = useStudioLayout();
   const [code, setCode] = useState<string | undefined>("");
-  // const [, setInit] = useState(false);
   const [database, setDatabase] = useState<string | undefined>("");
   const [logOpen, setLogOpen] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -69,8 +70,10 @@ const SQLEditor = ({
   const [queryName, setQueryName] = useState<undefined | string>(undefined);
   const queryNameRef = useRef<undefined | string>(undefined);
   const queryId = useRef<undefined | string>(undefined);
+  const [queryIdState, setQueryIdState] = useState(queryId.current);
   const [logHistory, setLogHistory] = useState<Array<LogMessage>>([]);
   const logHistoryRef = useRef<Array<LogMessage>>([]);
+
   useEffect(() => {
     // Initialize the editor instance and set default values
     let editorInstance = getEditorInstance(viewId);
@@ -152,7 +155,48 @@ const SQLEditor = ({
         store.delListener(logListenerId);
       };
     }
+
+    // If the view has a config.queryId, set queryId to that value
+    const tabNodeConfig: Record<string, unknown> = (
+      model.getNodeById(viewId) as TabNode
+    ).getConfig();
+    if (
+      tabNodeConfig &&
+      Object.hasOwn(tabNodeConfig, "queryId") &&
+      tabNodeConfig.queryId !== ""
+    ) {
+      queryId.current = tabNodeConfig.queryId as string;
+      setQueryIdState(queryId.current);
+    }
   }, [viewId]);
+
+  // This state var is only used when their is existing data with a queryId
+  // Populate the UI with the correct data when this changes from undefined
+  useEffect(() => {
+    if (!queryIdState) return;
+
+    // Get the data from the tinybase store and apply it to respective state variables
+    const editorStore = store.getRow("editors", queryIdState) as {
+      sql: string;
+      lastRunSql: string;
+      database: string;
+      queryId: string;
+    };
+    if (editorStore) {
+      setCode(editorStore.sql);
+      setDatabase(editorStore.database);
+    }
+
+    const resultStore = store.getCell(
+      "result",
+      queryIdState,
+      "queryName"
+    ) as string;
+    if (resultStore) {
+      setQueryName(resultStore);
+      queryNameRef.current = resultStore;
+    }
+  }, [queryIdState]);
 
   // Sync the editor instance with the store whenever `code` or `database` changes
   useEffect(() => {
@@ -193,7 +237,9 @@ const SQLEditor = ({
         "history"
       );
       logHistoryRef.current = JSON.parse(logStoreData as string);
-      setLogHistory(JSON.parse(logStoreData as string));
+      if (logHistoryRef.current[0].timestamp != undefined) {
+        setLogHistory(JSON.parse(logStoreData as string));
+      }
     }
   }, [viewId]);
 
@@ -202,6 +248,9 @@ const SQLEditor = ({
     // Update Log History
     if (queryId.current) {
       const updatedLog = [...logHistoryRef.current, ...log];
+      if (updatedLog[0].timestamp === undefined) {
+        updatedLog.shift();
+      }
       logHistoryRef.current = updatedLog;
       store.setRow("logHistory", queryId.current, {
         queryId: queryId.current,
@@ -340,6 +389,9 @@ const SQLEditor = ({
         "queryName",
         queryName || "No Name"
       );
+      updateViewConfig(viewId, {
+        queryId: queryId.current,
+      });
     } else {
       const uuid = v4();
       queryId.current = uuid;
@@ -356,6 +408,15 @@ const SQLEditor = ({
         lastRunSql: "",
         database: "",
         queryId: uuid,
+      });
+
+      store.setRow("logHistory", uuid, {
+        queryId: uuid,
+        history: JSON.stringify([{}]),
+      });
+
+      updateViewConfig(viewId, {
+        queryId: queryId.current,
       });
     }
   };
