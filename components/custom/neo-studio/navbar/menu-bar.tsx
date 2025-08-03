@@ -60,7 +60,7 @@ const Menubar = ({
   id: string;
 }) => {
   const [editConnection, setEditConnection] = useState(false);
-  const { addView, activeView } = useStudioLayout();
+  const { addView, activeView, updateViewConfig } = useStudioLayout();
   const { setSql, setDatabase, setQueryId } = useSqlEditor();
   const { setDataGridQueryId, getDataGridInstance } = useDataGrid();
   const { queryIdNameMap } = useResultsStore();
@@ -75,9 +75,8 @@ const Menubar = ({
       return;
     }
 
-    // Create editor and get the instance
+    // Create editor
     const editor = addView("Editor");
-    // const instance = getEditorInstance(activeView.getId());
 
     // Get the query data from the sql editor store
     const gridInstance = getDataGridInstance(gridId!);
@@ -89,6 +88,9 @@ const Menubar = ({
       return;
     }
     const editorRecord = store.getRow("editors", gridInstance.queryId!);
+
+    // Update its config to append the queryId
+    updateViewConfig(editor!.getId(), { queryId: gridInstance.queryId! });
 
     // Populate the editor
     setSql({

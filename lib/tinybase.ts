@@ -35,6 +35,7 @@ let isInitialized = false;
 export async function initializePersister() {
   try {
     if (!isInitialized) {
+      console.log("Initializing TinyBase persister");
       await persister.startAutoPersisting();
       isInitialized = true;
     }

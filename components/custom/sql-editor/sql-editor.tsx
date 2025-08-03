@@ -20,13 +20,11 @@ import {
 } from "@/components/ui/tooltip";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useResultsStore from "@/hooks/use-results-store";
-import useSqlEditor from "@/hooks/use-sql-editor";
 import useStudioLayout from "@/hooks/use-studio-layout";
 import useTinybase from "@/hooks/use-tinybase";
 import { NeoSqlError } from "@/services/types";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { Editor } from "@monaco-editor/react";
-import { Store } from "better-auth";
 import { TabNode } from "flexlayout-react";
 import { Cog, Play, RotateCcw, Save, StopCircle, Terminal } from "lucide-react";
 import React, {
@@ -35,7 +33,6 @@ import React, {
   SetStateAction,
   useCallback,
   useEffect,
-  useRef,
   useState,
 } from "react";
 import { PuffLoader } from "react-spinners";
@@ -47,6 +44,105 @@ interface LogMessage {
   message: string;
   timestamp: string;
 }
+
+// Custom Hook for Tinybase Subscription
+const useQueryData = (queryId: string | undefined) => {
+  const { store } = useTinybase();
+  const [sql, setSql] = useState("");
+  const [lastRunSql, setLastRunSql] = useState("");
+  const [database, setDatabase] = useState("");
+  const [queryName, setQueryName] = useState("");
+  const [logHistory, setLogHistory] = useState<LogMessage[]>([]);
+
+  useEffect(() => {
+    if (!queryId || !store) {
+      // If no queryId or store is unavailable, reset all states
+      setSql("");
+      setLastRunSql("");
+      setDatabase("");
+      setQueryName("");
+      setLogHistory([]);
+      return;
+    }
+
+    // Listeners
+    const editorListenerId = store.addRowListener(
+      "editors",
+      queryId,
+      (storeInstance, tableId, rowId) => {
+        const editorData = storeInstance.getRow(tableId, rowId);
+        setSql((editorData.sql as string) || "");
+        setLastRunSql((editorData.lastRunSql as string) || "");
+        setDatabase((editorData.database as string) || "");
+      }
+    );
+
+    // Listener for result table
+    const resultListenerId = store.addRowListener(
+      "result",
+      queryId,
+      (storeInstance, tableId, rowId) => {
+        setQueryName(
+          (storeInstance.getCell(tableId, rowId, "queryName") as string) || ""
+        );
+      }
+    );
+
+    // Listener for logHistory table changes
+    const logListenerId = store.addRowListener(
+      "logHistory",
+      queryId,
+      (storeInstance, tableId, rowId) => {
+        try {
+          const historyString = storeInstance.getCell(
+            tableId,
+            rowId,
+            "history"
+          ) as string;
+          const parsedHistory = historyString ? JSON.parse(historyString) : [];
+          setLogHistory(parsedHistory);
+        } catch (error) {
+          console.error("Failed to parse log history from Tinybase:", error);
+          setLogHistory([]);
+        }
+      }
+    );
+
+    const initialEditorData = store.getRow("editors", queryId);
+    if (initialEditorData) {
+      setSql((initialEditorData.sql as string) || "");
+      setLastRunSql((initialEditorData.lastRunSql as string) || "");
+      setDatabase((initialEditorData.database as string) || "");
+    }
+
+    const initialQueryName = store.getCell("result", queryId, "queryName");
+    if (initialQueryName) {
+      setQueryName(initialQueryName as string);
+    }
+
+    try {
+      const initialLogHistoryString = store.getCell(
+        "logHistory",
+        queryId,
+        "history"
+      ) as string;
+      const initialLogHistory = initialLogHistoryString
+        ? JSON.parse(initialLogHistoryString)
+        : [];
+      setLogHistory(initialLogHistory);
+    } catch (error) {
+      console.error("Failed to parse initial log history:", error);
+      setLogHistory([]);
+    }
+
+    return () => {
+      store.delListener(editorListenerId);
+      store.delListener(resultListenerId);
+      store.delListener(logListenerId);
+    };
+  }, [queryId, store]);
+  return { sql, lastRunSql, database, queryName, logHistory };
+};
 
 const SQLEditor = ({
   connection,
@@ -60,369 +156,256 @@ const SQLEditor = ({
   >;
   viewId: string;
 } & React.ComponentProps<"div">) => {
-  const { getEditorInstance, setSql, createInstance, editorInstances } =
-    useSqlEditor();
   const { model, updateViewConfig } = useStudioLayout();
-  const [code, setCode] = useState<string | undefined>("");
-  const [database, setDatabase] = useState<string | undefined>("");
+  const { store } = useTinybase();
+  const { calculateDefaultQueryName } = useResultsStore();
+
+  // State to hold the active queryId for this editor view
+  const [activeQueryId, setActiveQueryId] = useState<string | undefined>(
+    undefined
+  );
+  // State to hold the current content of the editor
+  const [editorContent, setEditorContent] = useState<string>("");
   const [logOpen, setLogOpen] = useState(true);
   const [loading, setLoading] = useState(false);
-  const { calculateDefaultQueryName } = useResultsStore();
-  const [queryName, setQueryName] = useState<undefined | string>(undefined);
-  const queryNameRef = useRef<undefined | string>(undefined);
-  const queryId = useRef<undefined | string>(undefined);
-  const [queryIdState, setQueryIdState] = useState(queryId.current);
-  const [logHistory, setLogHistory] = useState<Array<LogMessage>>([]);
-  const logHistoryRef = useRef<Array<LogMessage>>([]);
 
-  // Tinybase store
-  const { store } = useTinybase();
+  const {
+    sql: storedSql,
+    lastRunSql,
+    database: storedDatabase,
+    queryName,
+    logHistory,
+  } = useQueryData(activeQueryId);
 
+  // Effect to initialize or update activeQueryId from the layout config
   useEffect(() => {
-    // Initialize the editor instance and set default values
-    let editorInstance = getEditorInstance(viewId);
-    if (!editorInstance) {
-      editorInstance = createInstance(viewId);
+    const tabNode = model.getNodeById(viewId) as TabNode;
+    const configQueryId = tabNode?.getConfig()?.queryId as string | undefined;
+
+    if (configQueryId && configQueryId !== activeQueryId) {
+      setActiveQueryId(configQueryId);
+    } else if (!configQueryId && activeQueryId) {
+      setActiveQueryId(undefined);
     }
+  }, [viewId, model, activeQueryId]);
 
-    // Set initial state for code, database, and queryId
-    setCode(editorInstance?.sql || "");
-    setDatabase(editorInstance?.database || "");
-    queryId.current = editorInstance?.queryId || undefined;
-
-    // Set the query name if queryId exists
-    if (queryId.current) {
-      const queryName = store.getCell(
-        "result",
-        queryId.current,
-        "queryName"
-      ) as string;
-      setQueryName(queryName || "");
-      queryNameRef.current = queryName || "";
-    }
-
-    // Add a listener to keep the editor in sync with the store
-    if (queryId.current) {
-      const editorListenerId = store.addRowListener(
-        "editors",
-        queryId.current,
-        (store) => {
-          const sqlCell = store.getCell("editors", queryId.current!, "sql");
-          const databaseCell = store.getCell(
-            "editors",
-            queryId.current!,
-            "database"
-          );
-
-          // if (code !== sqlCell) {
-          //   setCode(sqlCell as string);
-          // }
-
-          if (database !== databaseCell) {
-            setDatabase(databaseCell as string);
-          }
-        }
-      );
-      const resultListenerId = store.addRowListener(
-        "result",
-        queryId.current,
-        (store) => {
-          const nameCell = store.getCell(
-            "result",
-            queryId.current!,
-            "queryName"
-          );
-
-          if (queryName !== nameCell) {
-            setQueryName(nameCell as string);
-          }
-        }
-      );
-      const logListenerId = store.addRowListener(
-        "logHistory",
-        queryId.current,
-        (store) => {
-          const historyCell = store.getCell(
-            "logHistory",
-            queryId.current!,
-            "history"
-          );
-
-          if (JSON.stringify(logHistory) !== historyCell) {
-            setLogHistory(JSON.parse(historyCell as string));
-          }
-        }
-      );
-      return () => {
-        store.delListener(editorListenerId);
-        store.delListener(resultListenerId);
-        store.delListener(logListenerId);
-      };
-    }
-
-    // If the view has a config.queryId, set queryId to that value
-    const tabNodeConfig: Record<string, unknown> = (
-      model.getNodeById(viewId) as TabNode
-    ).getConfig();
-    if (
-      tabNodeConfig &&
-      Object.hasOwn(tabNodeConfig, "queryId") &&
-      tabNodeConfig.queryId !== ""
-    ) {
-      queryId.current = tabNodeConfig.queryId as string;
-      setQueryIdState(queryId.current);
-    }
-  }, [viewId]);
-
-  // This state var is only used when their is existing data with a queryId
-  // Populate the UI with the correct data when this changes from undefined
+  // Effect to synchronize the Monaco editor's content with Tinybases storedSql
   useEffect(() => {
-    if (!queryIdState) return;
+    setEditorContent(storedSql);
+  }, [storedSql]);
 
-    // Get the data from the tinybase store and apply it to respective state variables
-    const editorStore = store.getRow("editors", queryIdState) as {
-      sql: string;
-      lastRunSql: string;
-      database: string;
-      queryId: string;
-    };
-    if (editorStore) {
-      setCode(editorStore.sql);
-      setDatabase(editorStore.database);
+  // Helper function to ensure a queryId exists and is initialized in Tinybase
+  const ensureQueryId = useCallback((): string => {
+    if (activeQueryId) {
+      return activeQueryId;
     }
 
-    const resultStore = store.getCell(
-      "result",
-      queryIdState,
-      "queryName"
-    ) as string;
-    if (resultStore) {
-      setQueryName(resultStore);
-      queryNameRef.current = resultStore;
-    }
-  }, [queryIdState]);
+    const newQueryId = v4();
+    setActiveQueryId(newQueryId);
+    updateViewConfig(viewId, { queryId: newQueryId });
 
-  // // Ensure the log history is synced
-  useEffect(() => {
-    if (queryId.current) {
-      const logStoreData = store.getCell(
-        "logHistory",
-        queryId.current,
-        "history"
-      );
+    // Initialize rows in Tinybase for the new query
+    store.setRow("result", newQueryId, {
+      queryId: newQueryId,
+      queryName: calculateDefaultQueryName(),
+      connectionId: connection.id,
+      data: JSON.stringify({}),
+    });
+    store.setRow("editors", newQueryId, {
+      sql: editorContent,
+      lastRunSql: "",
+      database: "",
+      queryId: newQueryId,
+    });
+    store.setRow("logHistory", newQueryId, {
+      queryId: newQueryId,
+      history: JSON.stringify([]),
+    });
+
+    return newQueryId;
+  }, [
+    activeQueryId,
+    store,
+    viewId,
+    updateViewConfig,
+    calculateDefaultQueryName,
+    connection.id,
+    editorContent,
+  ]);
+
+  // Helper function to append new log entries to Tinybase
+  const newLogEntry = useCallback(
+    (newLogs: LogMessage[]) => {
+      if (!activeQueryId || !store) return;
+
+      const currentHistoryString =
+        (store.getCell("logHistory", activeQueryId, "history") as string) ||
+        "[]";
+      let currentLogs: LogMessage[] = [];
       try {
-        logHistoryRef.current = JSON.parse(logStoreData as string);
-        if (logHistoryRef.current[0].timestamp != undefined) {
-          setLogHistory(JSON.parse(logStoreData as string));
-        }
+        currentLogs = JSON.parse(currentHistoryString);
       } catch (error) {
-        console.warn("Failed to parse log history", error);
+        console.warn("Failed to parse current log history:", error);
       }
-    }
-  }, [viewId]);
 
-  // Helper function to append new log to log history
-  function newLogEntry(log: Array<LogMessage>) {
-    // Update Log History
-    if (queryId.current) {
-      const updatedLog = [...logHistoryRef.current, ...log];
-      if (updatedLog[0].timestamp === undefined) {
-        updatedLog.shift();
-      }
-      logHistoryRef.current = updatedLog;
-      store.setRow("logHistory", queryId.current, {
-        queryId: queryId.current,
-        history: JSON.stringify(updatedLog),
+      // Filter out any invalid initial empty log entry if present
+      const filteredCurrentLogs = currentLogs.filter(
+        (log) => log && log.timestamp
+      );
+      const updatedLogs = [...filteredCurrentLogs, ...newLogs];
+
+      store.setRow("logHistory", activeQueryId, {
+        queryId: activeQueryId,
+        history: JSON.stringify(updatedLogs),
       });
-      setLogHistory(updatedLog);
-    }
-  }
-  // Main function for handeling the query execution
-  // This function is also responsible for syncing data to the Editors and Results Sync Layer
+    },
+    [activeQueryId, store]
+  );
+
   const handleExecute = useCallback(async () => {
+    setLoading(true);
+    setRequestState("loading");
+
+    // Ensure a queryId exists and is initialized before executing
+    const currentQueryId = ensureQueryId();
+
     try {
-      setLoading(true);
-      setRequestState("loading");
-      const schemaError = executeSqlSchema.safeParse({
-        sql: code,
-        ...(database ? { database: database } : {}),
+      const schemaResult = executeSqlSchema.safeParse({
+        sql: editorContent,
+        database: storedDatabase,
       });
-      if (!schemaError.success) {
+      if (!schemaResult.success) {
         newLogEntry([
           {
-            message: schemaError.error.issues[0].message,
+            message: schemaResult.error.issues[0].message,
             timestamp: new Date().toISOString(),
             type: "ERROR",
           },
         ]);
+        setLoading(false);
+        setRequestState("error");
         return;
       }
+
       const response = await fetch(`/api/connection/${connection.id}/execute`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          sql: code,
-          database,
-          ...(queryId.current ? { queryId: queryId.current } : null),
+          sql: editorContent,
+          database: storedDatabase,
+          queryId: currentQueryId,
         }),
       });
 
       const body: APIResponse<NeoQueryServerResponse> = await response.json();
+
       if (!response.ok) {
         throw body;
       }
 
-      queryId.current = body.data!.queryId;
-
-      // Add editor data to the store
-      store.setRow("editors", queryId.current, {
-        sql: code || "",
-        lastRunSql: code || "",
-        database: database || "",
-        queryId: queryId.current,
+      // Update Tinybase with execution results
+      store.setPartialRow("editors", currentQueryId, {
+        sql: editorContent,
+        lastRunSql: editorContent,
+        database: storedDatabase,
       });
-
-      // Add results to store
-      const _queryName = queryNameRef.current || calculateDefaultQueryName();
-      store.setRow("result", queryId.current, {
-        queryId: queryId.current,
-        queryName: _queryName,
-        connectionId: connection.id,
+      store.setPartialRow("result", currentQueryId, {
         data: JSON.stringify(body.data!.result),
       });
 
-      // Update Log History
       newLogEntry([
         {
           timestamp: new Date().toISOString(),
-          message: "Query executed successfully as QID: " + body.data!.queryId,
+          message: `Query executed successfully as QID: ${currentQueryId}`,
           type: "OK",
-        } as LogMessage,
+        },
         {
-          message:
-            "Query executed in " + body.data!.result.metadata.queryTime + " ms",
           timestamp: new Date().toISOString(),
+          message: `Query executed in ${
+            body.data!.result.metadata.queryTime
+          } ms`,
           type: "OK",
-        } as LogMessage,
+        },
       ]);
-      setQueryName(_queryName);
+
       setRequestState("loaded");
     } catch (error) {
-      console.log(error);
       setRequestState("error");
+      let errorMessage = "An unknown error occurred during query execution.";
+      const apiResponseError = error as APIResponse;
 
-      const e = error as unknown as APIResponse;
-
-      if (typeof e.error === "string") {
-        newLogEntry([
-          {
-            message: e.error,
-            timestamp: new Date().toISOString(),
-            type: "ERROR",
-          },
-        ]);
-      } else {
-        newLogEntry([
-          {
-            message: (e.error as NeoSqlError).error,
-            timestamp: new Date().toISOString(),
-            type: "ERROR",
-          },
-        ]);
+      if (apiResponseError && apiResponseError.error) {
+        if (typeof apiResponseError.error === "string") {
+          errorMessage = apiResponseError.error;
+        } else if (
+          typeof apiResponseError.error === "object" &&
+          apiResponseError.error !== null &&
+          "error" in apiResponseError.error &&
+          typeof (apiResponseError.error as NeoSqlError).error === "string"
+        ) {
+          errorMessage = (apiResponseError.error as NeoSqlError).error;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
 
-      toast("Failed to Execute SQL");
+      newLogEntry([
+        {
+          message: errorMessage,
+          timestamp: new Date().toISOString(),
+          type: "ERROR",
+        },
+      ]);
+      toast.error("Failed to Execute SQL");
     } finally {
       setLoading(false);
     }
-  }, [code, connection.id, database, setRequestState]);
+  }, [
+    editorContent,
+    storedDatabase,
+    connection.id,
+    setRequestState,
+    ensureQueryId,
+    store,
+    newLogEntry,
+  ]);
 
-  // Listen for changes in the editorInstances
-  useEffect(() => {
-    const editorInstance = getEditorInstance(viewId);
-    if (editorInstance) {
-      setCode(editorInstance.sql || "");
-      setDatabase(editorInstance.database || "");
-    }
-  }, [editorInstances, viewId]);
+  const handleSave = useCallback(() => {
+    const currentQueryId = ensureQueryId();
 
-  const handleReset = () => {
+    store.setPartialRow("editors", currentQueryId, { sql: editorContent });
+  }, [ensureQueryId, editorContent, store]);
+
+  const handleReset = useCallback(() => {
     setLoading(false);
     setRequestState(null);
 
-    if (queryId.current) {
-      const row = store.getRow("editors", queryId.current);
-      store.setRow("editors", queryId.current, {
-        ...row,
-        sql: row.lastRunSql,
-      });
-      setCode(row.lastRunSql as string);
+    if (activeQueryId && lastRunSql) {
+      store.setPartialRow("editors", activeQueryId, { sql: lastRunSql });
     } else {
-      setCode("");
+      setEditorContent("");
+      if (activeQueryId) {
+        store.setPartialRow("editors", activeQueryId, { sql: "" });
+      }
     }
-  };
+  }, [activeQueryId, lastRunSql, setRequestState, store]);
 
-  const handleNameChange = (value: string) => {
-    setQueryName(value);
-    queryNameRef.current = value;
-  };
-
-  // Saving is handled mostly automatically. This function allows the user
-  // to override the default saving procedure with their own data
-  const handleSave = () => {
-    if (queryId.current) {
-      store.setCell(
-        "result",
-        queryId.current,
-        "queryName",
-        queryName || "No Name"
-      );
-      store.setCell("editors", queryId.current, "sql", code || "");
-      updateViewConfig(viewId, {
-        queryId: queryId.current,
-      });
-    } else {
-      const uuid = v4();
-      queryId.current = uuid;
-
-      store.setRow("result", uuid, {
-        queryName: queryName || "No Name",
-        queryId: uuid,
-        data: JSON.stringify({}),
-        connectionId: connection.id,
-      });
-
-      store.setRow("editors", uuid, {
-        sql: code || "",
-        lastRunSql: "",
-        database: "",
-        queryId: uuid,
-      });
-
-      store.setRow("logHistory", uuid, {
-        queryId: uuid,
-        history: JSON.stringify([{}]),
-      });
-
-      updateViewConfig(viewId, {
-        queryId: queryId.current,
-      });
-    }
-  };
+  const handleQueryNameChange = useCallback(
+    (value: string) => {
+      if (activeQueryId) {
+        store.setCell("result", activeQueryId, "queryName", value);
+      }
+    },
+    [activeQueryId, store]
+  );
 
   return (
     <div {...props}>
       <div className="h-full w-full">
         {/* Options Bar */}
         <div className="w-full h-[38px] p-1 flex items-center gap-2 justify-between overflow-x-auto">
-          {/* 
-            Reset Query
-            View Query Options [name, id, database]
-            Toggle Log
-            Run query
-            Stop query
-            Open Results
-            Save Query
-          */}
           <div className="h-full flex gap-2 items-center">
             <OptionButton
               text="Reset Query"
@@ -445,8 +428,8 @@ const SQLEditor = ({
                   <p className="text-sm">Query Name</p>
                   <Input
                     placeholder="Query Name"
-                    defaultValue={queryName}
-                    onChange={(v) => handleNameChange(v.target.value)}
+                    value={queryName || ""}
+                    onChange={(v) => handleQueryNameChange(v.target.value)}
                     type="text"
                   />
                 </div>
@@ -487,12 +470,13 @@ const SQLEditor = ({
             />
             <Separator orientation="vertical" />
             <OptionButton
+              text="Run Query"
               trigger={
                 <Button
                   variant={"default"}
                   size="sm"
                   className="text-[12px]"
-                  disabled={loading || !code}
+                  disabled={loading || !editorContent}
                   onClick={handleExecute}
                 >
                   {loading ? (
@@ -511,19 +495,13 @@ const SQLEditor = ({
           direction="vertical"
           className="!h-[calc(100%-38px)]"
         >
-          <ResizablePanel
-            className={`${
-              !logOpen ? "!h-full !flex-grow !flex-!" : "min-h-[120px]"
-            } `}
-            defaultSize={75}
-          >
+          <ResizablePanel defaultSize={logOpen ? 75 : 100} minSize={20}>
             <Editor
-              className={`!flex-1 min-h-[300px]`}
+              height="100%"
               defaultLanguage="sql"
-              defaultValue={""}
-              onChange={setCode}
+              onChange={(value) => setEditorContent(value ?? "")}
               theme="vs-dark"
-              value={code}
+              value={editorContent}
               loading={"Initializing"}
               options={{
                 minimap: {
@@ -535,47 +513,31 @@ const SQLEditor = ({
           {logOpen && <ResizableHandle />}
 
           <ResizablePanel
-            className={`${
-              logOpen ? "block" : "hidden"
-            } w-full h-[200px] min-h-[120px] !overflow-auto`}
+            defaultSize={logOpen ? 25 : 0}
+            minSize={logOpen ? 15 : 0}
           >
             {/* Log */}
-            <div className="flex flex-col p-4">
-              {logHistory.length < 1 && (
-                <p className="text-sm text-muted-foreground font-courier">
-                  No Log data
-                </p>
+            <div className="w-full h-full overflow-auto p-4 font-courier">
+              {logHistory.length < 1 ? (
+                <p className="text-sm text-muted-foreground">No Log data</p>
+              ) : (
+                logHistory.map((log, i) => {
+                  const textColor =
+                    log.type === "ERROR"
+                      ? "text-red-500"
+                      : log.type === "OK"
+                      ? "text-green-500"
+                      : "text-gray-300";
+                  return (
+                    <p className={`text-sm ${textColor}`} key={i}>
+                      <span className="!text-primary mr-2">
+                        {`[${log.timestamp}]`}{" "}
+                      </span>
+                      {log.message}
+                    </p>
+                  );
+                })
               )}
-              {logHistory.map((log, i) => {
-                if (log.type === "ERROR") {
-                  return (
-                    <p className="text-sm text-red-500 font-courier" key={i}>
-                      <span className="!text-primary">
-                        {`[${log.timestamp}]`}{" "}
-                      </span>
-                      {log.message}
-                    </p>
-                  );
-                } else if (log.type === "OK") {
-                  return (
-                    <p className="text-sm text-green-500 font-courier" key={i}>
-                      <span className="!text-primary">
-                        {`[${log.timestamp}]`}{" "}
-                      </span>
-                      {log.message}
-                    </p>
-                  );
-                } else {
-                  return (
-                    <p className="text-sm font-courier" key={i}>
-                      <span className="!text-primary">
-                        {`[${log.timestamp}]`}{" "}
-                      </span>
-                      {log.message}
-                    </p>
-                  );
-                }
-              })}
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
