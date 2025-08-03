@@ -17,7 +17,7 @@ import useDataGrid from "@/hooks/use-datagrid";
 import useResultsStore from "@/hooks/use-results-store";
 import useSqlEditor from "@/hooks/use-sql-editor";
 import useStudioLayout from "@/hooks/use-studio-layout";
-import store from "@/lib/tinybase";
+import useTinybase from "@/hooks/use-tinybase";
 import { Project } from "@/prisma/generated/prisma";
 import { View } from "@/providers/studio-layout-provider";
 import {
@@ -64,6 +64,7 @@ const Menubar = ({
   const { setSql, setDatabase, setQueryId } = useSqlEditor();
   const { setDataGridQueryId, getDataGridInstance } = useDataGrid();
   const { queryIdNameMap } = useResultsStore();
+  const { store } = useTinybase();
 
   function handlePopulateEditor() {
     const gridId = activeView?.getId();

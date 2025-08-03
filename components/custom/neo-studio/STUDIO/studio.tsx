@@ -1,15 +1,18 @@
 "use client";
 
 import "@/components/custom/flexlayout/styles.css";
+import SplashScreen from "@/components/custom/neo-studio/splash-screen/splash-screen";
 import EditorView from "@/components/custom/neo-studio/views/editor-view/editor-view";
 import ResultsView from "@/components/custom/neo-studio/views/results-view/results-view";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useDataGrid from "@/hooks/use-datagrid";
 import useSqlEditor from "@/hooks/use-sql-editor";
 import useStudioLayout from "@/hooks/use-studio-layout";
-import store from "@/lib/tinybase";
+import useTinybase from "@/hooks/use-tinybase";
 import { Layout, TabNode } from "flexlayout-react";
+import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 
 const Studio = ({
@@ -101,6 +104,25 @@ const Studio = ({
     }
   };
 
+  const { loaded, store, error } = useTinybase();
+  if (!loaded) {
+    return <SplashScreen />;
+  }
+
+  if (error) {
+    return (
+      <div className="fixed top-0 left-0 w-screen h-screen bg-background flex items-center justify-center z-[100]">
+        <Alert className="max-w-[400px]" variant="destructive">
+          <AlertCircle />
+          <AlertTitle>Hmmm...</AlertTitle>
+          <AlertDescription>
+            There was an issue loading the local database. Try refreshing the
+            page!
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   return (
     <>
       <Layout model={model} factory={factory} ref={layoutRef} />

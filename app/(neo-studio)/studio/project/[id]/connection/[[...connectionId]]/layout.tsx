@@ -12,6 +12,7 @@ import { getProjects } from "@/data-access/project";
 import GridProvider from "@/providers/grid-provider";
 import SqlEditorProvider from "@/providers/sql-editor-provider";
 import StudioLayoutProvider from "@/providers/studio-layout-provider";
+import TinybaseProvider from "@/providers/tinebase-provider";
 import SupportedDatabase from "@/supported-databases";
 import getServerSideSession, { Session } from "@/utils/getServerSideSession";
 import { AlertCircle } from "lucide-react";
@@ -86,38 +87,40 @@ export default async function NoNavLayout({
     ? SupportedDatabase[dbType].identifierQuote
     : undefined;
   return (
-    <StudioLayoutProvider>
-      <GridProvider>
-        <SqlEditorProvider>
-          <SidebarProvider
-            defaultOpen={defaultOpen}
-            defaultWidth={sidebarWidth}
-          >
-            <Suspense fallback={<SplashScreen />}>
-              <DataLoader
-                connection={currentConnection ?? undefined}
-                id={id}
-                session={session}
-              >
-                <div className="w-full min-h-[calc(100vh-52px)] max-h-[calc(100%-52px)] overflow-visible flex mt-[52px] bg-backdrop">
-                  <Sidebar
-                    className="h-full top-[53px] rounded-none"
-                    connectionId={connectionId}
-                    exploreType={exploreType}
-                    identifierQuote={identifierQuote}
-                  />
-                  <SidebarInset className="relative h-[calc(100%-8px)] overflow-hidden w-full bg-backdrop">
-                    <div className="absolute overflow-hidden w-full h-full">
-                      {children}
-                    </div>
-                  </SidebarInset>
-                </div>
-              </DataLoader>
-            </Suspense>
-          </SidebarProvider>
-        </SqlEditorProvider>
-      </GridProvider>
-    </StudioLayoutProvider>
+    <TinybaseProvider>
+      <StudioLayoutProvider>
+        <GridProvider>
+          <SqlEditorProvider>
+            <SidebarProvider
+              defaultOpen={defaultOpen}
+              defaultWidth={sidebarWidth}
+            >
+              <Suspense fallback={<SplashScreen />}>
+                <DataLoader
+                  connection={currentConnection ?? undefined}
+                  id={id}
+                  session={session}
+                >
+                  <div className="w-full min-h-[calc(100vh-52px)] max-h-[calc(100%-52px)] overflow-visible flex mt-[52px] bg-backdrop">
+                    <Sidebar
+                      className="h-full top-[53px] rounded-none"
+                      connectionId={connectionId}
+                      exploreType={exploreType}
+                      identifierQuote={identifierQuote}
+                    />
+                    <SidebarInset className="relative h-[calc(100%-8px)] overflow-hidden w-full bg-backdrop">
+                      <div className="absolute overflow-hidden w-full h-full">
+                        {children}
+                      </div>
+                    </SidebarInset>
+                  </div>
+                </DataLoader>
+              </Suspense>
+            </SidebarProvider>
+          </SqlEditorProvider>
+        </GridProvider>
+      </StudioLayoutProvider>
+    </TinybaseProvider>
   );
 }
 

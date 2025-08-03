@@ -1,5 +1,5 @@
 import { NeoQueryServerResponse } from "@/app/(neo)/types/types";
-import store from "@/lib/tinybase";
+import useTinybase from "@/hooks/use-tinybase";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Row } from "tinybase";
@@ -30,6 +30,7 @@ const useResultsStore = (): UseResultsStore => {
   // To keep a level of abstraction, just implement route params here
   // Results store stores results with a connectionId to prevent results for x project/connection showing in y project/connection
   const params = useParams();
+  const { store } = useTinybase();
   const connectionId =
     Array.isArray(params["connectionId"]) && params["connectionId"].length > 0
       ? params["connectionId"][0]

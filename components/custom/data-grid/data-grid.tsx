@@ -1,6 +1,6 @@
 "use client";
 import { NeoQueryServerResponse } from "@/app/(neo)/types/types";
-import store from "@/lib/tinybase";
+import useTinybase from "@/hooks/use-tinybase";
 import { NeoRow } from "@/services/types";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -29,6 +29,8 @@ const DataGrid = ({
   const [columnWidths, setColumnWidths] = useState(
     (): ColumnWidths => new Map()
   );
+
+  const { store } = useTinybase();
 
   useEffect(() => {
     const listenerId = store.addRowListener("result", queryId, (store) => {

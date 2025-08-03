@@ -22,7 +22,7 @@ import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-
 import useResultsStore from "@/hooks/use-results-store";
 import useSqlEditor from "@/hooks/use-sql-editor";
 import useStudioLayout from "@/hooks/use-studio-layout";
-import store from "@/lib/tinybase";
+import useTinybase from "@/hooks/use-tinybase";
 import { NeoSqlError } from "@/services/types";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { Editor } from "@monaco-editor/react";
@@ -73,6 +73,9 @@ const SQLEditor = ({
   const [queryIdState, setQueryIdState] = useState(queryId.current);
   const [logHistory, setLogHistory] = useState<Array<LogMessage>>([]);
   const logHistoryRef = useRef<Array<LogMessage>>([]);
+
+  // Tinybase store
+  const { store } = useTinybase();
 
   useEffect(() => {
     // Initialize the editor instance and set default values
@@ -170,6 +173,10 @@ const SQLEditor = ({
     }
   }, [viewId]);
 
+  useEffect(() => {
+    console.log("code is", code);
+  }, [code]);
+
   // This state var is only used when their is existing data with a queryId
   // Populate the UI with the correct data when this changes from undefined
   useEffect(() => {
@@ -182,6 +189,7 @@ const SQLEditor = ({
       database: string;
       queryId: string;
     };
+    console.log("editor store", editorStore);
     if (editorStore) {
       setCode(editorStore.sql);
       setDatabase(editorStore.database);
@@ -236,9 +244,13 @@ const SQLEditor = ({
         queryId.current,
         "history"
       );
-      logHistoryRef.current = JSON.parse(logStoreData as string);
-      if (logHistoryRef.current[0].timestamp != undefined) {
-        setLogHistory(JSON.parse(logStoreData as string));
+      try {
+        logHistoryRef.current = JSON.parse(logStoreData as string);
+        if (logHistoryRef.current[0].timestamp != undefined) {
+          setLogHistory(JSON.parse(logStoreData as string));
+        }
+      } catch (error) {
+        console.warn("Failed to parse log history", error);
       }
     }
   }, [viewId]);

@@ -29,21 +29,20 @@ store.setSchema({
 // Use a Persiser to save data in the browsers IndexedDB. I think that session storage is to short as you'll likely want to come back to data later. Feel free to change this.
 const databaseName = "Neo-Results-Sync-Datastore";
 
-const persister = createIndexedDbPersister(store, databaseName);
-
+export const persister = createIndexedDbPersister(store, databaseName);
+let isInitialized = false;
 // Start auto-persisting
-async function initializePersister() {
+export async function initializePersister() {
   try {
-    await persister.startAutoPersisting();
-
-    console.log("TinyBase IndexedDB persister initialized successfully.");
+    if (!isInitialized) {
+      await persister.startAutoPersisting();
+      isInitialized = true;
+    }
+    // console.log("TinyBase IndexedDB persister initialized successfully.");
   } catch (error) {
     console.error("Failed to initialize TinyBase persister:", error);
   }
 }
-
-// Call the initialization function
-initializePersister();
 
 // Logging for debug purposes
 // persister.addStatusListener((status) => {

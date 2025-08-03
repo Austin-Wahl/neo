@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import useDataGrid from "@/hooks/use-datagrid";
-import store from "@/lib/tinybase";
+import useTinybase from "@/hooks/use-tinybase";
 import { useEffect, useState } from "react";
 const ResultsView = ({
   queryId,
@@ -20,6 +20,7 @@ const ResultsView = ({
 }) => {
   // Queries are synced within a tinybase store
   // const { queryIdNameMap } = useResultsStore();
+  const { store } = useTinybase();
   const [selectedQueryId, setSelectedQueryId] = useState<undefined | string>(
     undefined
   );
