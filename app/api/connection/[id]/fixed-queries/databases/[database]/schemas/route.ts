@@ -82,7 +82,6 @@ export const GET = async (
       port: connection.connection!.port,
       ssl: connection.connection!.ssl,
       username: connection.connection!.username,
-      database: database,
     });
     const connectionInstance = neo.getConnection();
     const connected = await connectionInstance.testConnection();
