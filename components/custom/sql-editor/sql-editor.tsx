@@ -26,6 +26,7 @@ import useTinybase from "@/hooks/use-tinybase";
 import { NeoSqlError } from "@/services/types";
 import { executeSqlSchema } from "@/validation-schemas/connection";
 import { Editor } from "@monaco-editor/react";
+import { Store } from "better-auth";
 import { TabNode } from "flexlayout-react";
 import { Cog, Play, RotateCcw, Save, StopCircle, Terminal } from "lucide-react";
 import React, {
@@ -113,9 +114,9 @@ const SQLEditor = ({
             "database"
           );
 
-          if (code !== sqlCell) {
-            setCode(sqlCell as string);
-          }
+          // if (code !== sqlCell) {
+          //   setCode(sqlCell as string);
+          // }
 
           if (database !== databaseCell) {
             setDatabase(databaseCell as string);
@@ -173,10 +174,6 @@ const SQLEditor = ({
     }
   }, [viewId]);
 
-  useEffect(() => {
-    console.log("code is", code);
-  }, [code]);
-
   // This state var is only used when their is existing data with a queryId
   // Populate the UI with the correct data when this changes from undefined
   useEffect(() => {
@@ -189,7 +186,6 @@ const SQLEditor = ({
       database: string;
       queryId: string;
     };
-    console.log("editor store", editorStore);
     if (editorStore) {
       setCode(editorStore.sql);
       setDatabase(editorStore.database);
@@ -205,36 +201,6 @@ const SQLEditor = ({
       queryNameRef.current = resultStore;
     }
   }, [queryIdState]);
-
-  // Sync the editor instance with the store whenever `code` or `database` changes
-  useEffect(() => {
-    if (!queryId.current) return;
-
-    // Update the store with the latest SQL and database values
-    store.setCell("editors", queryId.current, "sql", code || "");
-    store.setCell("editors", queryId.current, "database", database || "");
-  }, [code, database]);
-
-  // Ensure the editor instance is updated when editorInstances changes
-  useEffect(() => {
-    const editorInstance = getEditorInstance(viewId);
-    if (editorInstance) {
-      setCode(editorInstance.sql || "");
-      setDatabase(editorInstance.database || "");
-    }
-  }, [editorInstances, viewId]);
-
-  // Ensure the editor instance is initialized with the latest SQL
-  useEffect(() => {
-    const editorInstance = getEditorInstance(viewId);
-    if (editorInstance && !editorInstance.sql) {
-      editorInstance.sql = code || "";
-      setSql({
-        viewId,
-        sql: code || "",
-      });
-    }
-  }, [code, viewId]);
 
   // // Ensure the log history is synced
   useEffect(() => {
@@ -370,6 +336,15 @@ const SQLEditor = ({
     }
   }, [code, connection.id, database, setRequestState]);
 
+  // Listen for changes in the editorInstances
+  useEffect(() => {
+    const editorInstance = getEditorInstance(viewId);
+    if (editorInstance) {
+      setCode(editorInstance.sql || "");
+      setDatabase(editorInstance.database || "");
+    }
+  }, [editorInstances, viewId]);
+
   const handleReset = () => {
     setLoading(false);
     setRequestState(null);
@@ -401,6 +376,7 @@ const SQLEditor = ({
         "queryName",
         queryName || "No Name"
       );
+      store.setCell("editors", queryId.current, "sql", code || "");
       updateViewConfig(viewId, {
         queryId: queryId.current,
       });
