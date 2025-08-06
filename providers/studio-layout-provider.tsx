@@ -206,13 +206,6 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
     return res;
   }
 
-  // Listen for changes in model and apply them to LS
-  // useEffect(() => {
-  //   if (model) {
-  //     save(model);
-  //   }
-  // }, [model]);
-
   // On load
   useEffect(() => {
     // Get layout
@@ -314,11 +307,9 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
     reset?: boolean
   ) => {
     try {
-      console.log("Updating config");
       if (!layoutRef.current) {
         throw new Error("Layout Ref does not exist");
       }
-
       const activeView = model.getNodeById(viewId) as TabNode;
       if (!activeView) {
         console.warn("Failed to update view config. This view does not exist.");
@@ -341,7 +332,6 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
 
       setModel(model);
 
-      console.log("Updated view:", model.getNodeById(viewId));
       return model.getNodeById(viewId) as TabNode;
     } catch (error) {
       console.error(

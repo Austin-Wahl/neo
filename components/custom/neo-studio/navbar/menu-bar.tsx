@@ -15,9 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import useDataGrid from "@/hooks/use-datagrid";
 import useResultsStore from "@/hooks/use-results-store";
-import useSqlEditor from "@/hooks/use-sql-editor";
 import useStudioLayout from "@/hooks/use-studio-layout";
-import useTinybase from "@/hooks/use-tinybase";
 import { Project } from "@/prisma/generated/prisma";
 import { View } from "@/providers/studio-layout-provider";
 import {
@@ -61,10 +59,8 @@ const Menubar = ({
 }) => {
   const [editConnection, setEditConnection] = useState(false);
   const { addView, activeView, updateViewConfig } = useStudioLayout();
-  const { setSql, setDatabase, setQueryId } = useSqlEditor();
   const { setDataGridQueryId, getDataGridInstance } = useDataGrid();
   const { queryIdNameMap } = useResultsStore();
-  const { store } = useTinybase();
 
   function handlePopulateEditor() {
     const gridId = activeView?.getId();
@@ -87,24 +83,8 @@ const Menubar = ({
       );
       return;
     }
-    const editorRecord = store.getRow("editors", gridInstance.queryId!);
-
     // Update its config to append the queryId
     updateViewConfig(editor!.getId(), { queryId: gridInstance.queryId! });
-
-    // Populate the editor
-    setSql({
-      sql: editorRecord.sql as string,
-      viewId: editor!.getId(),
-    });
-    setDatabase({
-      database: editorRecord.database as string,
-      viewId: editor!.getId(),
-    });
-    setQueryId({
-      queryId: editorRecord.queryId as string,
-      viewId: editor!.getId(),
-    });
   }
 
   return (

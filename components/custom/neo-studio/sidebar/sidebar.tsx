@@ -37,7 +37,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import useSqlEditor from "@/hooks/use-sql-editor";
 import useStudioLayout from "@/hooks/use-studio-layout";
 import { cn } from "@/lib/utils";
 import { SupportedDatabaseProps } from "@/supported-databases";
@@ -429,8 +428,7 @@ const SchemaTable = ({
   connectionId: string;
   icon?: ReactNode;
 } & SupportedDatabaseProps) => {
-  const { addView } = useStudioLayout();
-  const { createInstance, setSql, setDatabase } = useSqlEditor();
+  const { addView, updateViewConfig } = useStudioLayout();
   const [error, setError] = useState("");
   const { open } = useSidebar();
   const [init, setInit] = useState(false);
@@ -479,32 +477,10 @@ const SchemaTable = ({
   function handleSidebarElmClick(item: string) {
     // Create an editor
     const editor = addView("Editor")!;
-    console.log(editor);
-    // Get the instance of that editor
-    const instance = createInstance(editor.getId());
-
-    setSql({
+    updateViewConfig(editor.getId(), {
       sql: `SELECT * FROM ${schema}.${identifierQuote}${item}${identifierQuote}`,
-      viewId: instance.viewId,
-    });
-
-    setDatabase({
-      viewId: instance.viewId,
       database: database,
     });
-    // If their is
-    // no active view or the active view is not , create an editor
-
-    // const instance = getEditorInstanceOrForceCreate(activeViwId);
-    // console.log("instance", instance);
-    // setSql({
-    //   sql: `SELECT * FROM ${schema}.${identifierQuote}${item}${identifierQuote}`,
-    //   viewId: instance.viewId,
-    // });
-    // setDatabase({
-    //   database: database,
-    //   viewId: instance.viewId,
-    // });
   }
 
   return (

@@ -10,6 +10,7 @@ const store = createStore();
 store.setSchema({
   editors: {
     sql: { type: "string" },
+    state: { type: "boolean" },
     lastRunSql: { type: "string" },
     database: { type: "string" },
     queryId: { type: "string" },
