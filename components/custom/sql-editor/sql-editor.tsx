@@ -79,6 +79,32 @@ const useQueryData = (queryId: string | undefined): UseQueryData => {
   const [logHistory, setLogHistory] = useState<LogMessage[]>([]);
   const { calculateDefaultQueryName } = useResultsStore();
 
+  function setCreatedAndUpdatedAt() {
+    if (!queryId) return;
+    const existingCreatedAt = store.getCell(
+      "result",
+      queryId,
+      "createdAt"
+    ) as string;
+
+    if (!existingCreatedAt) {
+      console.warn("New query. Setting Created and Updated values");
+      store.setPartialRow("result", queryId, {
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    } else {
+      console.warn(
+        "Existing query. Setting Updated values",
+        new Date().toISOString()
+      );
+
+      store.setPartialRow("result", queryId, {
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  }
+
   useEffect(() => {
     if (!queryId || !store) {
       // If no queryId or store is unavailable, reset all states
@@ -321,11 +347,12 @@ const SQLEditor = memo(
     );
 
     function setLoading(state: boolean) {
-      if (activeQueryId)
-        store.setPartialRow("editors", activeQueryId, {
-          state,
-        });
+      if (!activeQueryId) return;
+      store.setPartialRow("editors", activeQueryId, {
+        state,
+      });
     }
+
     const handleExecute = useCallback(async () => {
       setLoading(true);
       setRequestState("loading");
@@ -333,6 +360,7 @@ const SQLEditor = memo(
       const currentQueryId = ensureQueryId();
 
       try {
+        // setCreatedAndUpdatedAt();
         const schemaResult = executeSqlSchema.safeParse({
           sql: editorContent,
           database: storedDatabase,
@@ -499,6 +527,7 @@ const SQLEditor = memo(
         );
       }
     }, [activeQueryId, store]);
+
     return (
       <div {...props}>
         <div className="h-full w-full">

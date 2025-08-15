@@ -1,4 +1,5 @@
 "use client";
+import ManageResultsDialog from "@/components/custom/neo-studio/manage-results-dialog/manage-results-dialog";
 import UpdateConnectionDialog from "@/components/custom/update-connection-dialog/update-connection-dialog";
 import {
   MenubarContent,
@@ -24,6 +25,7 @@ import {
   ChartArea,
   Code,
   Download,
+  Folder,
   LucideProps,
   Notebook,
   Plus,
@@ -58,6 +60,7 @@ const Menubar = ({
   id: string;
 }) => {
   const [editConnection, setEditConnection] = useState(false);
+  const [queryResultsManager, setQueryResultsManager] = useState(false);
   const { addView, activeView, updateViewConfig } = useStudioLayout();
   const { setDataGridQueryId, getDataGridInstance } = useDataGrid();
   const { queryIdNameMap } = useResultsStore();
@@ -186,6 +189,10 @@ const Menubar = ({
             <Code className="w-[16px] mr-2" />
             Populate in Editor
           </MenubarItem>
+          <MenubarItem onClick={() => {setQueryResultsManager(true)}}>
+            <Folder />
+            Manage Results
+          </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>
@@ -231,6 +238,12 @@ const Menubar = ({
           />
         ) : null}
       </MenubarMenu>
+      <ManageResultsDialog
+        connection={connection!}
+        enableTrigger={false}
+        onOpenChange={setQueryResultsManager}
+        open={queryResultsManager}
+      />
     </ShadMenubar>
   );
 };

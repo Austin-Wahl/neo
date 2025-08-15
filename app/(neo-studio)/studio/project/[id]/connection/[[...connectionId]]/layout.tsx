@@ -104,9 +104,14 @@ export default async function NoNavLayout({
                   <div className="w-full min-h-[calc(100vh-52px)] max-h-[calc(100%-52px)] overflow-visible flex mt-[52px] bg-backdrop">
                     <Sidebar
                       className="h-full top-[53px] rounded-none"
-                      connectionId={connectionId}
-                      exploreType={exploreType}
-                      identifierQuote={identifierQuote}
+                      dbProps={{
+                        connectionId: connectionId,
+                        exploreType: exploreType!,
+                        identifierQuote: identifierQuote!,
+                      }}
+                      // connectionId={connectionId}
+                      // exploreType={exploreType}
+                      // identifierQuote={identifierQuote}
                     />
                     <SidebarInset className="relative h-[calc(100%-8px)] overflow-hidden w-full bg-backdrop">
                       <div className="absolute overflow-hidden w-full h-full">

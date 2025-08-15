@@ -20,6 +20,8 @@ store.setSchema({
     queryId: { type: "string" },
     data: { type: "string" },
     connectionId: { type: "string" },
+    createdAt: { type: "string" },
+    updatedAt: { type: "string" },
   },
   logHistory: {
     queryId: { type: "string" },

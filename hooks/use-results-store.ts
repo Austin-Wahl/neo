@@ -1,5 +1,6 @@
 import { NeoQueryServerResponse } from "@/app/(neo)/types/types";
 import useTinybase from "@/hooks/use-tinybase";
+import { Stringified } from "@/types/types";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Row } from "tinybase";
@@ -18,7 +19,6 @@ interface UseResultsStore {
   }) => void;
 }
 
-type Stringified<T> = string & { __type__: T };
 interface ResultProps {
   queryName: string;
   queryId: string;

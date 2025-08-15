@@ -56,17 +56,21 @@ import {
 import { ReactNode, useState } from "react";
 
 type SidebarProps = React.ComponentProps<typeof ShadSidebar> & {
-  connectionId?: string;
-} & Partial<SupportedDatabaseProps>;
+  dbProps: {
+    connectionId?: string;
+  } & Partial<SupportedDatabaseProps>;
+};
 
 type SidebarProps_DBConnected = React.ComponentProps<typeof ShadSidebar> & {
-  connectionId: string;
-} & SupportedDatabaseProps;
+  dbProps: {
+    connectionId: string;
+  } & SupportedDatabaseProps;
+};
 
-const Sidebar = (props: SidebarProps) => {
+const Sidebar = ({ dbProps, ...props }: SidebarProps) => {
   const { open } = useSidebar();
 
-  if (!props.connectionId) {
+  if (!dbProps.connectionId) {
     return (
       <ShadSidebar variant="sidebar" {...props} collapsible="icon">
         <SidebarRail />
@@ -104,9 +108,7 @@ const Sidebar = (props: SidebarProps) => {
 };
 
 const Sidebar_DBConnected = ({
-  connectionId,
-  exploreType,
-  identifierQuote,
+  dbProps,
   ...props
 }: SidebarProps_DBConnected) => {
   const [error, setError] = useState("");
@@ -114,7 +116,7 @@ const Sidebar_DBConnected = ({
   const { data, status, refetch, isRefetching } = useQuery<
     APIResponse<Array<string>>
   >({
-    queryKey: ["databases", connectionId],
+    queryKey: ["databases", dbProps.connectionId],
     queryFn: getDatabases,
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
@@ -124,7 +126,7 @@ const Sidebar_DBConnected = ({
       setError("");
 
       const response = await fetch(
-        `/api/connection/${connectionId}/fixed-queries/databases`
+        `/api/connection/${dbProps.connectionId}/fixed-queries/databases`
       );
 
       const body: APIResponse<Array<string>> = await response.json();
@@ -229,11 +231,11 @@ const Sidebar_DBConnected = ({
             data.items!.map((database) => {
               return (
                 <DatabaseExplorer
-                  exploreType={exploreType}
+                  exploreType={dbProps.exploreType}
                   database={database}
                   key={database}
-                  connectionId={connectionId}
-                  identifierQuote={identifierQuote}
+                  connectionId={dbProps.connectionId}
+                  identifierQuote={dbProps.identifierQuote}
                 />
               );
             })}
