@@ -44,8 +44,6 @@ This isn’t about replacing existing tools—it’s about making database manag
 
 ---
 
-This version is more conversational and human while still sounding professional and corporate. It avoids overly technical jargon and focuses on the **value** and **purpose** of NEO and NEO STUDIO. Let me know if this feels more natural!
-
 > NEO and NEO STUDIO are designed and built by Austin Wahl using Open Sourced technologies.
 
 Licensed under the Apache License, Version 2.0 (the "License");
