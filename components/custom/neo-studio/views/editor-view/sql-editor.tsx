@@ -79,32 +79,6 @@ const useQueryData = (queryId: string | undefined): UseQueryData => {
   const [logHistory, setLogHistory] = useState<LogMessage[]>([]);
   const { calculateDefaultQueryName } = useResultsStore();
 
-  function setCreatedAndUpdatedAt() {
-    if (!queryId) return;
-    const existingCreatedAt = store.getCell(
-      "result",
-      queryId,
-      "createdAt"
-    ) as string;
-
-    if (!existingCreatedAt) {
-      console.warn("New query. Setting Created and Updated values");
-      store.setPartialRow("result", queryId, {
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    } else {
-      console.warn(
-        "Existing query. Setting Updated values",
-        new Date().toISOString()
-      );
-
-      store.setPartialRow("result", queryId, {
-        updatedAt: new Date().toISOString(),
-      });
-    }
-  }
-
   useEffect(() => {
     if (!queryId || !store) {
       // If no queryId or store is unavailable, reset all states
@@ -169,6 +143,7 @@ const useQueryData = (queryId: string | undefined): UseQueryData => {
 
     const initialQueryName = store.getCell("result", queryId, "queryName");
     if (initialQueryName) {
+      console.log("running");
       setQueryName(initialQueryName as string);
     } else {
       setQueryName(calculateDefaultQueryName());
@@ -221,7 +196,7 @@ const SQLEditor = memo(
     >;
     viewId: string;
   } & React.ComponentProps<"div">) => {
-    const { model, updateViewConfig } = useStudioLayout();
+    const { model, updateViewConfig, activeConnection } = useStudioLayout();
     const { calculateDefaultQueryName } = useResultsStore();
     const { store } = useTinybase();
     const editorRef = useRef<MonacoEditor | null>(null);
@@ -254,8 +229,34 @@ const SQLEditor = memo(
         | undefined;
       const configQueryId = config?.queryId as string | undefined;
 
+      // Check if a config was passed in
       if (configQueryId && configQueryId !== activeQueryId) {
-        setActiveQueryId(configQueryId);
+        const connectionIdFromStorage = store.getCell(
+          "result",
+          configQueryId,
+          "connectionId"
+        );
+        if (connectionIdFromStorage === activeConnection) {
+          setActiveQueryId(configQueryId);
+        } else {
+          // Check for a query with the viewId of the opened editor
+          let queryId = undefined;
+          store.forEachRow("editors", (rowId) => {
+            const cellViewId = store.getCell("editors", rowId, "viewId");
+            if (cellViewId !== viewId) return;
+
+            const cellConnectionId = store.getCell(
+              "editors",
+              rowId,
+              "connectionId"
+            );
+
+            if (cellConnectionId !== activeConnection) return;
+            queryId = store.getCell("editors", rowId, "queryId");
+            return;
+          });
+          setActiveQueryId(queryId);
+        }
       } else if (!configQueryId && activeQueryId) {
         setActiveQueryId(undefined);
       } else {
@@ -270,6 +271,10 @@ const SQLEditor = memo(
       if (config && config.database) {
         setDatabase(config.database as string);
       }
+
+      if (config && config.queryId) {
+        setActiveQueryId(config.queryId as string);
+      }
     }, [viewId, model, activeQueryId]);
 
     // Effect to synchronize the Monaco editor's content with Tinybases storedSql
@@ -279,7 +284,21 @@ const SQLEditor = memo(
 
     // Helper function to ensure a queryId exists and is initialized in Tinybase
     const ensureQueryId = useCallback((): string => {
+      console.log("running 0");
+
       if (activeQueryId) {
+        // Re
+        console.log("running 1");
+        if (!store.hasRow("result", activeQueryId) && editorContent) {
+          console.log("running 2");
+
+          store.setRow("result", activeQueryId, {
+            queryId: activeQueryId,
+            queryName: queryName || calculateDefaultQueryName(),
+            connectionId: connection.id,
+            data: JSON.stringify({}),
+          });
+        }
         return activeQueryId;
       }
 
@@ -287,13 +306,17 @@ const SQLEditor = memo(
       setActiveQueryId(newQueryId);
       updateViewConfig(viewId, { queryId: newQueryId });
 
-      // Initialize rows in Tinybase for the new query
-      store.setRow("result", newQueryId, {
-        queryId: newQueryId,
-        queryName: queryName || calculateDefaultQueryName(),
-        connectionId: connection.id,
-        data: JSON.stringify({}),
-      });
+      if (!store.hasRow("result", newQueryId)) {
+        console.log("running 3");
+
+        // Initialize rows in Tinybase for the new query
+        store.setRow("result", newQueryId, {
+          queryId: newQueryId,
+          queryName: queryName || calculateDefaultQueryName(),
+          connectionId: connection.id,
+          data: JSON.stringify({}),
+        });
+      }
       store.setRow("editors", newQueryId, {
         sql: editorContent,
         lastRunSql: "",
@@ -309,9 +332,9 @@ const SQLEditor = memo(
       return newQueryId;
     }, [
       activeQueryId,
-      store,
-      viewId,
       updateViewConfig,
+      viewId,
+      store,
       queryName,
       connection.id,
       editorContent,
@@ -501,9 +524,8 @@ const SQLEditor = memo(
 
     const handleQueryNameChange = useCallback(
       (value: string) => {
-        value = value.trim();
         if (activeQueryId) {
-          store.setCell("result", activeQueryId, "queryName", value);
+          store.setCell("result", activeQueryId, "queryName", value.trim());
         } else setQueryName(value);
       },
       [activeQueryId, store]
@@ -511,8 +533,12 @@ const SQLEditor = memo(
     const handleEditorChange = useCallback(
       (value: string | undefined) => {
         const currentQueryId = ensureQueryId();
-        // No local state update! Write directly to Tinybase.
-        store.setPartialRow("editors", currentQueryId, { sql: value ?? "" });
+        // No local state update, write directly to Tinybase.
+        store.setPartialRow("editors", currentQueryId, {
+          sql: value ?? "",
+          viewId,
+          connectionId: connection.id,
+        });
       },
       [ensureQueryId, store]
     );

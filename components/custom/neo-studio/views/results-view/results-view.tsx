@@ -8,8 +8,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import useDataGrid from "@/hooks/use-datagrid";
+import useStudioLayout from "@/hooks/use-studio-layout";
 import useTinybase from "@/hooks/use-tinybase";
+import { TabNode } from "flexlayout-react";
 import { useEffect, useState } from "react";
+
 const ResultsView = ({
   queryId,
   viewId,
@@ -20,6 +23,7 @@ const ResultsView = ({
 }) => {
   // Queries are synced within a tinybase store
   // const { queryIdNameMap } = useResultsStore();
+  const { model, updateViewConfig } = useStudioLayout();
   const { store } = useTinybase();
   const [selectedQueryId, setSelectedQueryId] = useState<undefined | string>(
     undefined
@@ -32,36 +36,60 @@ const ResultsView = ({
   } = useDataGrid();
 
   // When the results view loads, check for an instance or create one
+  // Also check for config data passed in
   useEffect(() => {
     let gridInstance = getDataGridInstance(viewId);
     if (!gridInstance) {
       gridInstance = createInstance(viewId);
     }
-    setSelectedQueryId(gridInstance.queryId);
+    // setSelectedQueryId(gridInstance.queryId);
+
+    // Check for config
+    const tabNode = model.getNodeById(viewId) as TabNode;
+    const config = tabNode?.getConfig() as Record<string, unknown> | undefined;
+    const configQueryId = config?.queryId as string | undefined;
+    if (configQueryId) {
+      setSelectedQueryId(configQueryId);
+      setDataGridQueryId({
+        viewId,
+        queryId: configQueryId,
+      });
+    } else {
+      setSelectedQueryId(gridInstance.queryId);
+    }
   }, []);
 
-  useEffect(() => {
-    if (queryId) {
-      setSelectedQueryId(queryId);
-    }
-  }, [queryId]);
+  // useEffect(() => {
+  //   if (queryId) {
+  //     setSelectedQueryId(queryId);
+  //   }
+  // }, [queryId]);
 
-  useEffect(() => {
-    const gridInstance = getDataGridInstance(viewId);
-    if (gridInstance) {
-      setDataGridQueryId({
-        queryId: selectedQueryId,
-        viewId: viewId,
-      });
-    }
-  }, [getDataGridInstance, selectedQueryId, viewId]);
+  // useEffect(() => {
+  //   const gridInstance = getDataGridInstance(viewId);
+  //   if (gridInstance) {
+  //     setDataGridQueryId({
+  //       queryId: selectedQueryId,
+  //       viewId: viewId,
+  //     });
+  //   }
+  // }, [getDataGridInstance, selectedQueryId, viewId]);
 
   useEffect(() => {
     const gridInstance = getDataGridInstance(viewId);
     if (gridInstance) {
       setSelectedQueryId(gridInstance.queryId);
+      updateViewConfig(viewId, {
+        queryId: selectedQueryId,
+      });
     }
-  }, [gridInstances]);
+  }, [
+    getDataGridInstance,
+    gridInstances,
+    selectedQueryId,
+    updateViewConfig,
+    viewId,
+  ]);
 
   if (selectedQueryId) {
     const parsed = JSON.parse(

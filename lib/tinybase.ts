@@ -10,10 +10,12 @@ const store = createStore();
 store.setSchema({
   editors: {
     sql: { type: "string" },
+    viewId: { type: "string" },
     state: { type: "boolean" },
     lastRunSql: { type: "string" },
     database: { type: "string" },
     queryId: { type: "string" },
+    connectionId: { type: "string" },
   },
   result: {
     queryName: { type: "string" },
@@ -22,6 +24,7 @@ store.setSchema({
     connectionId: { type: "string" },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
+    viewId: { type: "string" },
   },
   logHistory: {
     queryId: { type: "string" },
@@ -34,6 +37,7 @@ const databaseName = "Neo-Results-Sync-Datastore";
 
 export const persister = createIndexedDbPersister(store, databaseName);
 let isInitialized = false;
+
 // Start auto-persisting
 export async function initializePersister() {
   try {

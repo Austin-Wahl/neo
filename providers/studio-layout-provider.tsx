@@ -9,6 +9,7 @@ import {
   TabNode,
   TabSetNode,
 } from "flexlayout-react";
+import { useParams } from "next/navigation";
 import {
   createContext,
   ReactNode,
@@ -21,6 +22,7 @@ import {
 interface StudioLayout {
   model: Model;
   activeView: TabNode | null;
+  activeConnection: string | undefined;
   openViews: Array<TabNode>;
   layoutRef: RefObject<Layout | null> | null;
   addView: (
@@ -77,6 +79,7 @@ const defaultModelJson: IJsonModel = {
 
 export const StudioLayoutContext = createContext<StudioLayout>({
   model: Model.fromJson(defaultModelJson),
+  activeConnection: undefined,
   activeView: null,
   openViews: [],
   layoutRef: null,
@@ -87,11 +90,21 @@ export const StudioLayoutContext = createContext<StudioLayout>({
 const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
   const layoutFile = "neo-user-layout";
   const layoutRef = useRef<Layout>(null);
-
+  const routeParams = useParams();
   const [model, setModel] = useState<Model>(Model.fromJson(defaultModelJson));
   const [activeView, setActiveView] = useState<TabNode | null>(null);
+  const [activeConnection, setActiveConnection] = useState<string | undefined>(
+    undefined
+  );
   const [openViews, setOpenViews] = useState<Array<TabNode>>([]);
   const openViewRef = useRef<Array<TabNode>>([]);
+
+  // Listen for changes in the URL to update the activeConnection state
+  useEffect(() => {
+    const { connectionId } = routeParams;
+    if (connectionId) setActiveConnection(connectionId[0]);
+    else setActiveConnection(undefined);
+  }, [routeParams]);
 
   // Listens for changes in the open views and  updates state
   useEffect(() => {
@@ -340,11 +353,13 @@ const StudioLayoutProvider = ({ children }: { children: ReactNode }) => {
       );
     }
   };
+
   return (
     <StudioLayoutContext.Provider
       value={{
         model,
         activeView,
+        activeConnection,
         openViews: openViewRef.current,
         layoutRef,
         addView,

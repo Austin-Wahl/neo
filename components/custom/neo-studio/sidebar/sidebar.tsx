@@ -104,7 +104,16 @@ const Sidebar = ({ dbProps, ...props }: SidebarProps) => {
     );
   }
 
-  return <Sidebar_DBConnected {...(props as SidebarProps_DBConnected)} />;
+  return (
+    <Sidebar_DBConnected
+      dbProps={{
+        connectionId: dbProps.connectionId,
+        exploreType: dbProps.exploreType!,
+        identifierQuote: dbProps.identifierQuote!,
+      }}
+      {...props}
+    />
+  );
 };
 
 const Sidebar_DBConnected = ({

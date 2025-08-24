@@ -109,9 +109,6 @@ export default async function NoNavLayout({
                         exploreType: exploreType!,
                         identifierQuote: identifierQuote!,
                       }}
-                      // connectionId={connectionId}
-                      // exploreType={exploreType}
-                      // identifierQuote={identifierQuote}
                     />
                     <SidebarInset className="relative h-[calc(100%-8px)] overflow-hidden w-full bg-backdrop">
                       <div className="absolute overflow-hidden w-full h-full">

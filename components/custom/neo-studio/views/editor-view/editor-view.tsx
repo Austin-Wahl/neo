@@ -1,5 +1,5 @@
 "use client";
-import SQLEditor from "@/components/custom/sql-editor/sql-editor";
+import SQLEditor from "@/components/custom/neo-studio/views/editor-view/sql-editor";
 import { DatabaseConnectionWithConnectionDetails } from "@/data-access/database-connection";
 import { Dispatch, SetStateAction } from "react";
 
